@@ -1,27 +1,44 @@
 package com.eomcs.pms.handler;
 
-import java.util.Iterator;
-import java.util.List;
-import com.eomcs.pms.domain.Project;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
-public class ProjectListHandler extends AbstractProjectHandler {
+public class ProjectListHandler implements Command {
 
-  public ProjectListHandler(List<Project> projectList) {
-    super(projectList);
-  }
+	@Override
+	public void service(DataInputStream in, DataOutputStream out) {
+		try {    
+			System.out.println("[프로젝트 목록]");
 
-  @Override
-  public void service() {
-    System.out.println("[프로젝트 목록]");
+			out.writeUTF("project/selectall");
+			out.writeInt(0);
+			out.flush();
 
-    Iterator<Project> iterator = projectList.iterator();
+			String status = in.readUTF();
+			int length = in.readInt();
 
-    while (iterator.hasNext()) {
-      Project p = iterator.next();
-      System.out.printf("%d, %s, %s, %s, %s, [%s]\n",
-          p.getNo(), p.getTitle(), p.getStartDate(), p.getEndDate(), p.getOwner(), p.getMembers());
-    }
-  }
+			if(status.equals("error")) {
+				System.out.println(in.readUTF());
+				return;
+			}
+
+			for(int i = 0; i < length; i++) {
+				String[] fields = in.readUTF().split(",");
+				System.out.printf("%s, %s, %s, %s, %s, %s, %s\n",
+						fields[0],
+						fields[1],
+						fields[2],
+						fields[3],
+						fields[4],
+						fields[5],
+						fields[6]);
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }
 
 

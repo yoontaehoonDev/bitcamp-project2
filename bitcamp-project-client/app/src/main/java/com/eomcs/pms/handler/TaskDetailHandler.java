@@ -1,31 +1,50 @@
 package com.eomcs.pms.handler;
 
-import java.util.List;
-import com.eomcs.pms.domain.Task;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
 import com.eomcs.util.Prompt;
 
-public class TaskDetailHandler extends AbstractTaskHandler {
+public class TaskDetailHandler implements Command {
 
-  public TaskDetailHandler(List<Task> taskList) {
-    super(taskList);
-  }
+	@Override
+	public void service(DataInputStream in, DataOutputStream out) {
+		try {
+			System.out.println("[작업 상세보기]");
 
-  @Override
-  public void service() {
-    System.out.println("[작업 상세보기]");
+			int no = Prompt.inputInt("번호? ");
+			out.writeUTF("task/select");
+			out.writeInt(1);
+			out.writeUTF(Integer.toString(no));
 
-    int no = Prompt.inputInt("번호? ");
+			String status = in.readUTF();
+			in.readInt();
 
-    Task task = findByNo(no);
-    if (task == null) {
-      System.out.println("해당 번호의 작업이 없습니다.");
-      return;
-    }
+			if(status.equals("error")) {
+				System.out.println(in.readUTF());
+				return;
+			}
 
-    System.out.printf("내용: %s\n", task.getContent());
-    System.out.printf("마감일: %s\n", task.getDeadline());
-    System.out.printf("상태: %s\n", getStatusLabel(task.getStatus()));
-    System.out.printf("담당자: %s\n", task.getOwner());
+			String[] fields = in.readUTF().split(",");
 
-  }
+			System.out.printf("내용: %s\n", fields[1]);
+			System.out.printf("마감일: %s\n", fields[2]);
+			System.out.printf("상태: %s\n", getStatusLabel(fields[3]));
+			System.out.printf("담당자: %s\n", fields[4]);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private String getStatusLabel(String fields) {
+		switch (fields) {
+		case "1":
+			return "진행중";
+		case "2":
+			return "완료";
+		default:
+			return "신규";
+		}
+	}
 }

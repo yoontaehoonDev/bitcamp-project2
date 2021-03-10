@@ -1,25 +1,38 @@
 package com.eomcs.pms.handler;
 
-import java.util.Iterator;
-import java.util.List;
-import com.eomcs.pms.domain.Task;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
-public class TaskListHandler extends AbstractTaskHandler {
+public class TaskListHandler implements Command {
 
-  public TaskListHandler(List<Task> taskList) {
-    super(taskList);
-  }
+	@Override
+	public void service(DataInputStream in, DataOutputStream out) {
+		try {    
+			System.out.println("[작업 목록]");
+			out.writeUTF("task/selectall");
+			out.writeInt(0);
+			out.flush();
 
-  @Override
-  public void service() {
-    System.out.println("[작업 목록]");
+			String status = in.readUTF();
+			int length = in.readInt();
 
-    Iterator<Task> iterator = taskList.iterator();
+			if(status.equals("error")) {
+				System.out.println(in.readUTF());
+				return;
+			}
 
-    while (iterator.hasNext()) {
-      Task t = iterator.next();
-      System.out.printf("%d, %s, %s, %s, %s\n", 
-          t.getNo(), t.getContent(), t.getDeadline(), getStatusLabel(t.getStatus()), t.getOwner());
-    }
-  }
+			for(int i = 0; i < length; i++) {
+				String[] fields = in.readUTF().split(",");
+				System.out.printf("%s, %s, %s, %s, %s\n",
+						fields[0],
+						fields[1],
+						fields[2],
+						fields[3],
+						fields[4]);
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

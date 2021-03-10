@@ -1,35 +1,42 @@
 package com.eomcs.pms.handler;
 
-import java.util.List;
-import com.eomcs.pms.domain.Project;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
 import com.eomcs.util.Prompt;
 
-public class ProjectDetailHandler extends AbstractProjectHandler {
+public class ProjectDetailHandler implements Command{
 
-  public ProjectDetailHandler(List<Project> projectList) {
-    super(projectList);
-  }
+	@Override
+	public void service(DataInputStream in, DataOutputStream out) {
+		try {    System.out.println("[프로젝트 상세보기]");
 
-  @Override
-  public void service() {
-    System.out.println("[프로젝트 상세보기]");
+		int no = Prompt.inputInt("번호? ");
+		out.writeUTF("project/select");
+		out.writeInt(1);
+		out.writeUTF(Integer.toString(no));
 
-    int no = Prompt.inputInt("번호? ");
+		String status = in.readUTF();
+		in.readInt();
 
-    Project project = findByNo(no);
-    if (project == null) {
-      System.out.println("해당 번호의 프로젝트가 없습니다.");
-      return;
-    }
+		if(status.equals("error")) {
+			System.out.println(in.readUTF());
+			return;
+		}
 
-    System.out.printf("프로젝트명: %s\n", project.getTitle());
-    System.out.printf("내용: %s\n", project.getContent());
-    System.out.printf("시작일: %s\n", project.getStartDate());
-    System.out.printf("종료일: %s\n", project.getEndDate());
-    System.out.printf("관리자: %s\n", project.getOwner());
-    System.out.printf("팀원: %s\n", project.getMembers());
+		String[] fields = in.readUTF().split(",");
 
-  }
+		System.out.printf("프로젝트명: %s\n", fields[1]);
+		System.out.printf("내용: %s\n", fields[2]);
+		System.out.printf("시작일: %s\n", fields[3]);
+		System.out.printf("종료일: %s\n", fields[4]);
+		System.out.printf("관리자: %s\n", fields[5]);
+		System.out.printf("팀원: %s\n", fields[6]);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 }
 
 
