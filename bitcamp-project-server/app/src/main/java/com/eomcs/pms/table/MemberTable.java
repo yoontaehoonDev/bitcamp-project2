@@ -5,6 +5,7 @@ import java.sql.Date;
 import java.util.List;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.util.JsonFileHandler;
+import com.eomcs.util.Prompt;
 import com.eomcs.util.Request;
 import com.eomcs.util.Response;
 
@@ -65,6 +66,7 @@ public class MemberTable implements DataTable {
               m.getRegisteredDate()));
         }
         break;
+
       case "member/select":
         int num = Integer.parseInt(request.getDataList().get(0));
 
@@ -114,6 +116,14 @@ public class MemberTable implements DataTable {
         list.remove(member);
         JsonFileHandler.saveObjects(jsonFile, list);
         break;
+      case "member/check":
+        String check = request.getDataList().get(0);
+        String name = inputMember(check);
+
+
+        // 프로젝트, 작업 추가 및 변경 핸들러에서 사용할 부분
+
+        break;
       default:
         throw new Exception("해당 명령을 처리할 수 없습니다.");
 
@@ -128,5 +138,29 @@ public class MemberTable implements DataTable {
     }
     return null;
   }
+
+  public String inputMember(String promptTitle) {
+    while (true) {
+      String name = Prompt.inputString(promptTitle);
+      if (name.length() == 0) {
+        return null;
+      } 
+      if (findByName(name) != null) {
+        return name;
+      }
+      System.out.println("등록된 회원이 아닙니다.");
+    }
+  }
+
+  private String findByName(String name) {
+    for(Member m : list) {
+      if(m.getName().equals(name)) {
+        return m.getName();
+      }
+    }
+    return null;
+  }
+
+
 
 }

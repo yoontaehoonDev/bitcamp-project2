@@ -59,7 +59,7 @@ public class ProjectTable implements DataTable {
               p.getNo(), 
               p.getTitle(), 
               p.getContent(), 
-              p.getStartDate().toString(), 
+              p.getStartDate().toString(),
               p.getEndDate().toString(), 
               p.getOwner(), 
               p.getMembers().replace(",", "|")));
@@ -71,13 +71,14 @@ public class ProjectTable implements DataTable {
         project = getProject(num);
 
         if(project != null) {
-          response.appendData(String.format("%d,%s,%s,%s,%s,%d", 
+          response.appendData(String.format("%d,%s,%s,%s,%s,%s,%s", 
               project.getNo(),
               project.getTitle(),
               project.getContent(),
-              project.getWriter(),
-              project.getRegisteredDate(),
-              project.getViewCount()));
+              project.getStartDate().toString(),
+              project.getEndDate().toString(),
+              project.getOwner(),
+              project.getMembers().replace(",", "|")));
         }
         else {
           throw new Exception("해당 번호의 게시글이 없습니다.");
