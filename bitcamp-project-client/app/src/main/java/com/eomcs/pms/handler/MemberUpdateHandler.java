@@ -1,43 +1,62 @@
 package com.eomcs.pms.handler;
 
-import java.util.List;
-import com.eomcs.pms.domain.Member;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import com.eomcs.util.Prompt;
 
-public class MemberUpdateHandler extends AbstractMemberHandler {
-
-  public MemberUpdateHandler(List<Member> memberList) {
-    super(memberList);
-  }
+public class MemberUpdateHandler implements Command {
 
   @Override
-  public void service() {
-    System.out.println("[회원 변경]");
+  public void service(DataInputStream in, DataOutputStream out) {
+    try {
+      System.out.println("[회원 변경]");
 
-    int no = Prompt.inputInt("번호? ");
+      int no = Prompt.inputInt("번호? ");
+      out.writeUTF("member/select");
+      out.writeInt(1);
+      out.writeUTF(Integer.toString(no));
+      out.flush();
 
-    Member member = findByNo(no);
-    if (member == null) {
-      System.out.println("해당 번호의 회원이 없습니다.");
-      return;
-    }
+      String status = in.readUTF();
+      in.readInt();
 
-    String name = Prompt.inputString(String.format("이름(%s)? ", member.getName()));
-    String email = Prompt.inputString(String.format("이메일(%s)? ", member.getEmail()));
-    String photo = Prompt.inputString(String.format("사진(%s)? ", member.getPhoto()));
-    String tel = Prompt.inputString(String.format("전화(%s)? ", member.getTel()));
+      if(status.equals("error")) {
+        System.out.println(in.readUTF());
+        return;
+      }
 
-    String input = Prompt.inputString("정말 변경하시겠습니까?(y/N) ");
+      String[] fields = in.readUTF().split(",");
 
-    if (input.equalsIgnoreCase("Y")) {
-      member.setName(name);
-      member.setEmail(email);
-      member.setPhoto(photo);
-      member.setTel(tel);
+      String name = Prompt.inputString(String.format("이름(%s)? ", fields[1]));
+      String email = Prompt.inputString(String.format("이메일(%s)? ", fields[2]));
+      String password = Prompt.inputString(String.format("비밀번호(%s)?", fields[3]));
+      String photo = Prompt.inputString(String.format("사진(%s)? ", fields[4]));
+      String tel = Prompt.inputString(String.format("전화(%s)? ", fields[5]));
+
+      String input = Prompt.inputString("정말 변경하시겠습니까?(y/N) ");
+
+      if (!input.equalsIgnoreCase("Y")) {
+        System.out.println("회원 변경을 취소하였습니다.");
+        return;
+      }
+
+      out.writeUTF("member/update");
+      out.writeInt(1);
+      out.writeUTF(String.format("%d,%s,%s,%s,%s,%s", no, name, email, password, photo, tel));
+      out.flush();
+
+      status = in.readUTF();
+      in.readInt();
+
+      if(status.equals("error")) {
+        System.out.println(in.readUTF());
+        return;
+      }
+
       System.out.println("회원을 변경하였습니다.");
-
-    } else {
-      System.out.println("회원 변경을 취소하였습니다.");
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 }

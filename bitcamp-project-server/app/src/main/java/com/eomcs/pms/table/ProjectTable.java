@@ -3,45 +3,47 @@ package com.eomcs.pms.table;
 import java.io.File;
 import java.sql.Date;
 import java.util.List;
-import com.eomcs.pms.domain.Board;
+import com.eomcs.pms.domain.Project;
 import com.eomcs.util.JsonFileHandler;
 import com.eomcs.util.Request;
 import com.eomcs.util.Response;
 
 public class ProjectTable implements DataTable {
 
-  File jsonFile = new File("boards.json");
-  List<Board> list;
+  File jsonFile = new File("projects.json");
+  List<Project> list;
 
   public ProjectTable() {
-    list = JsonFileHandler.loadObjects(jsonFile, Board.class);
+    list = JsonFileHandler.loadObjects(jsonFile, Project.class);
   }
 
   @Override
   public void service(Request request, Response response) throws Exception {
 
-    Board board = null;
+    Project project = null;
     String[] fields = null;
     switch(request.getCommand()) {
-      case "board/insert":
+      case "project/insert":
 
         fields = request.getDataList().get(0).split(",");
 
-        board = new Board();
+        project = new Project();
 
         if(list.size() > 0) {
-          board.setNo(list.get(list.size() - 1).getNo() + 1);
+          project.setNo(list.get(list.size() - 1).getNo() + 1);
         }
         else {
-          board.setNo(1);
+          project.setNo(1);
         }
 
-        board.setTitle(fields[0]);
-        board.setContent(fields[1]);
-        board.setWriter(fields[2]);
-        board.setRegisteredDate(new Date(System.currentTimeMillis()));
+        project.setTitle(fields[0]);
+        project.setContent(fields[1]);
+        project.setStartDate(Date.valueOf(fields[2]));
+        project.setEndDate(Date.valueOf(fields[3]));
+        project.setOwner(fields[4]);
+        project.setMembers(fields[5]);
 
-        list.add(board);
+        list.add(project);
 
         // 게시글을 목록에 추가하는 즉시, List 컬렉션의 전체 데이터를 파일에 저장
         // - 매번 전체 데이터를 파일에 저장하는 것은 비효율적이다.
@@ -51,59 +53,61 @@ public class ProjectTable implements DataTable {
         JsonFileHandler.saveObjects(jsonFile, list);
         break;
 
-      case "board/selectall":
-        for(Board b : list) {
-          response.appendData(String.format("%d,%s,%s,%s,%d", 
-              b.getNo(),
-              b.getTitle(),
-              b.getWriter(),
-              b.getRegisteredDate(),
-              b.getViewCount()));
+      case "project/selectall":
+        for(Project p : list) {
+          response.appendData(String.format("%d,%s,%s,%s,%s,%s,%s\n", 
+              p.getNo(), 
+              p.getTitle(), 
+              p.getContent(), 
+              p.getStartDate().toString(), 
+              p.getEndDate().toString(), 
+              p.getOwner(), 
+              p.getMembers().replace(",", "|")));
         }
         break;
-      case "board/select":
+      case "project/select":
         int num = Integer.parseInt(request.getDataList().get(0));
 
-        board = getBoard(num);
+        project = getProject(num);
 
-        if(board != null) {
+        if(project != null) {
           response.appendData(String.format("%d,%s,%s,%s,%s,%d", 
-              board.getNo(),
-              board.getTitle(),
-              board.getContent(),
-              board.getWriter(),
-              board.getRegisteredDate(),
-              board.getViewCount()));
+              project.getNo(),
+              project.getTitle(),
+              project.getContent(),
+              project.getWriter(),
+              project.getRegisteredDate(),
+              project.getViewCount()));
         }
         else {
           throw new Exception("해당 번호의 게시글이 없습니다.");
         }
         break;
-      case "board/selectByKeyword":
+      case "project/selectByKeyword":
 
         break;
-      case "board/update":
+      case "project/update":
         fields = request.getDataList().get(0).split(",");
 
-        board = getBoard(Integer.parseInt(fields[0]));
-        if (board == null) {
+        project = getProject(Integer.parseInt(fields[0]));
+        if (project == null) {
           throw new Exception("해당 번호의 게시글이 없습니다.");
         }
 
         // 해당 게시물의 제목과 내용을 변경한다.
         // - List에 보관된 객체를 꺼낸 것이기 때문에
         //   그냥 그 객체의 값을 변경하면 된다.
-        board.setTitle(fields[1]);
-        board.setContent(fields[2]);
+        project.setTitle(fields[1]);
+        project.setContent(fields[2]);
         JsonFileHandler.saveObjects(jsonFile, list);
         break;
-      case "board/delete":
+      case "project/delete":
         num = Integer.parseInt(request.getDataList().get(0));
-        board = getBoard(num);
-        if (board == null) {
+        project = getProject(num);
+        if (project == null) {
           throw new Exception("해당 번호의 게시글이 없습니다.");
         }
-        list.remove(board);
+        list.remove(project);
         JsonFileHandler.saveObjects(jsonFile, list);
         break;
       default:
@@ -112,10 +116,10 @@ public class ProjectTable implements DataTable {
     }
   }
 
-  private Board getBoard(int boardNum) {
-    for(Board b : list) {
-      if(b.getNo() == boardNum) {
-        return b;
+  private Project getProject(int projectNum) {
+    for(Project p : list) {
+      if(p.getNo() == projectNum) {
+        return p;
       }
     }
     return null;
