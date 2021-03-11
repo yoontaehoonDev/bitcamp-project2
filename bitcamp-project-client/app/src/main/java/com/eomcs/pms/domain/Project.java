@@ -47,7 +47,6 @@ public class Project {
   public String toCsvString() {
     return String.format("%d,%s,%s,%s,%s,%s,%s\n", 
         this.getNo(), this.getTitle(), this.getContent(), this.getStartDate().toString(), this.getEndDate().toString(), this.getOwner(), this.getMembers().replace(",", "|"));
-    // .replace(",", "|")  
   }
 
   public static Project valueOfCsv(String csv) {

@@ -1,36 +1,26 @@
 package com.eomcs.pms.handler;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.util.Iterator;
+import com.eomcs.driver.Statement;
 
 public class ProjectListHandler implements Command {
 
   @Override
-  public void service(DataInputStream in, DataOutputStream out) throws Exception {
+  public void service(Statement stmt) throws Exception {
     System.out.println("[프로젝트 목록]");
 
-    out.writeUTF("project/selectall");
-    out.writeInt(0);
-    out.flush();
+    Iterator<String> results = stmt.executeQuery("project/selectall");
 
-    String status = in.readUTF();
-    int length = in.readInt();
-
-    if(status.equals("error")) {
-      System.out.println(in.readUTF());
-      return;
-    }
-
-    for(int i = 0; i < length; i++) {
-      String[] fields = in.readUTF().split(",");
-      System.out.printf("%s, %s, %s, %s, %s, %s, %s\n",
-          fields[0],
+    while(results.hasNext()) {
+      String[] fields = results.next().split(",");
+      System.out.printf("%s, %s, %s, %s, %s, %s\n",
+          fields[0], 
           fields[1],
           fields[2],
           fields[3],
           fields[4],
-          fields[5],
-          fields[6]);
+          fields[5]
+          );
     }
   }
 
