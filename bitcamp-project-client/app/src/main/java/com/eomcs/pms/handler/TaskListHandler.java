@@ -5,8 +5,13 @@ import com.eomcs.driver.Statement;
 
 public class TaskListHandler implements Command {
 
+  Statement stmt;
+
+  public TaskListHandler(Statement stmt) {
+    this.stmt = stmt;
+  }
   @Override
-  public void service(Statement stmt) throws Exception {
+  public void service() throws Exception {
     System.out.println("[작업 목록]");
 
     Iterator<String> results = stmt.executeQuery("task/selectall");

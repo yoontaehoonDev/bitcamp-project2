@@ -5,8 +5,13 @@ import com.eomcs.util.Prompt;
 
 public class ProjectDeleteHandler implements Command {
 
+  Statement stmt;
+
+  public ProjectDeleteHandler(Statement stmt) {
+    this.stmt = stmt;
+  }
   @Override
-  public void service(Statement stmt) throws Exception {
+  public void service() throws Exception {
     System.out.println("[프로젝트 삭제]");
 
     int no = Prompt.inputInt("번호? ");

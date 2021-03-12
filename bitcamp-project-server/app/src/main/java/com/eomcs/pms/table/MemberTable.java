@@ -23,7 +23,6 @@ public class MemberTable implements DataTable {
     Member member = null;
     String[] fields = null;
     String name = null;
-    String temp = null;
     switch(request.getCommand()) {
       case "member/insert":
 

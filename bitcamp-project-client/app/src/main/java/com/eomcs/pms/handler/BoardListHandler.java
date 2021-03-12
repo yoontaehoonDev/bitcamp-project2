@@ -5,9 +5,14 @@ import com.eomcs.driver.Statement;
 
 public class BoardListHandler implements Command {
 
+  Statement stmt;
+
+  public BoardListHandler(Statement stmt) {
+    this.stmt = stmt;
+  }
 
   @Override
-  public void service(Statement stmt) throws Exception {
+  public void service() throws Exception {
     System.out.println("[게시글 목록]");
 
     // 서버에 게시글 목록을 달라고 요청한다.
