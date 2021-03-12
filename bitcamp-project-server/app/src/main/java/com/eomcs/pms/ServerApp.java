@@ -21,7 +21,6 @@ import com.eomcs.util.Response;
 
 public class ServerApp {
   int port;
-
   HashMap<String, DataTable> tableMap = new HashMap<>();
 
   public ServerApp(int port) {
@@ -35,68 +34,39 @@ public class ServerApp {
 
   public void service() {
 
+    // non-static 중첩 클래스 = inner 클래스
+    // - inner 클래스는 바깥 클래스 입장에서 인스턴스 멤버이다.
+    // - 따라서, 바깥 클래스에 소속된 다른 인스턴스 멤버(필가 or 메소드)에 바로 접근할 수 있다.
+
     tableMap.put("board/", new BoardTable());
     tableMap.put("member/", new MemberTable());
     tableMap.put("project/", new ProjectTable());
     tableMap.put("task/", new TaskTable());
 
-    try(ServerSocket serverSocket = new ServerSocket(this.port)) {
+    try (ServerSocket serverSocket = new ServerSocket(this.port)) {
       System.out.println("서버 실행");
 
-      while(true) {
-        processRequest(serverSocket.accept());
+      while (true) {
+        Socket socket = serverSocket.accept();
+
+
+        new Thread(() -> processRequest(socket)).start();
+
+        // 쓰레드를 시작시키면, 현재 실행 흐름과 별개로 새 실행 흐름이 만들어진다.
+        // 그 흐름에서 쓰레드의 run() 메소드가 호출된다.
+        // 쓰레드를 시작시킨 후, 즉시 리턴하기 때문에
+        // 대기열에 기다리고 있는 다음 클라이언트의 연결을 바로 승인할 수 있다.
       }
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
       System.out.println("서버 실행 중 오류 발생");
     }
   }
 
-  private void processRequest(Socket socket) {
-    try(DataInputStream in = new DataInputStream(socket.getInputStream());
-        DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
-
-      while(true) {
-
-        Request request = receiveRequest(in);
-
-        log(request);
-
-        if(request.getCommand().equals("quit")) {
-          sendResponse(out, "success");
-          break;
-        }
-
-        DataTable dataTable = findDataTable(request.getCommand());
-
-        if(dataTable != null) {
-          Response response = new Response();
-          try {
-            dataTable.service(request, response);
-            sendResponse(out, "success", response.getDataList().toArray(new String[response.getDataList().size()]));
-          }
-          catch (Exception e) {
-            e.printStackTrace();
-            sendResponse(out, "error", e.getMessage());
-          }
-        }
-        else {
-          sendResponse(out, "error", "해당 요청을 처리할 수 없습니다.");
-        }
-        out.flush();
-      }
-    }
-
-    catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
-
   private DataTable findDataTable(String command) {
     Set<String> keySet = tableMap.keySet();
-    for(String key : keySet) {
-      if(command.startsWith(key)) {
+    for (String key : keySet) {
+      if (command.startsWith(key)) {
         return tableMap.get(key);
       }
     }
@@ -110,21 +80,20 @@ public class ServerApp {
     int length = in.readInt();
 
     ArrayList<String> data = null;
-    if(length > 0) {
+    if (length > 0) {
       data = new ArrayList<>();
-      for(int i = 0; i < length; i++) {
+      for (int i = 0; i < length; i++) {
         data.add(in.readUTF());
       }
       request.setDataList(data);
     }
-
     return request;
   }
 
   private void sendResponse(DataOutputStream out, String status, String... data) throws Exception {
     out.writeUTF(status);
     out.writeInt(data.length);
-    for(int i = 0; i< data.length; i++) {
+    for (int i = 0; i < data.length; i++) {
       out.writeUTF(data[i]);
     }
     out.flush();
@@ -135,11 +104,53 @@ public class ServerApp {
     System.out.printf("명령 : %s\n", request.getCommand());
     List<String> data = request.getDataList();
     System.out.printf("데이터 개수 : %d\n", data == null ? 0 : data.size());
-    if(data != null) {
+    if (data != null) {
       System.out.println("데이터 : ");
-      for(String str : data) {
+      for (String str : data) {
         System.out.println(str);
       }
     }
   }
+
+  public void processRequest(Socket socket) {
+    // 별도의 실행 흐름에서 수행할 작업이 있다면, 이 메소드에 기술한다.
+    try (DataInputStream in = new DataInputStream(socket.getInputStream());
+        DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+
+      while (true) {
+
+        Request request = receiveRequest(in);
+
+        log(request);
+
+        if (request.getCommand().equals("quit")) {
+          sendResponse(out, "success");
+          break;
+        }
+
+        DataTable dataTable = findDataTable(request.getCommand());
+
+        if (dataTable != null) {
+          Response response = new Response();
+          try {
+            dataTable.service(request, response);
+            sendResponse(out, "success",
+                response.getDataList().toArray(new String[response.getDataList().size()]));
+          } catch (Exception e) {
+            e.printStackTrace();
+            sendResponse(out, "error", e.getMessage());
+          }
+        } else {
+          sendResponse(out, "error", "해당 요청을 처리할 수 없습니다.");
+        }
+        out.flush();
+      }
+    }
+
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+
 }
