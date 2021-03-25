@@ -62,7 +62,6 @@ public class StatementHandlerThread extends Thread {
     catch (Exception e) {
       e.printStackTrace();
     }
-
   }
 
   private DataTable findDataTable(String command) {
