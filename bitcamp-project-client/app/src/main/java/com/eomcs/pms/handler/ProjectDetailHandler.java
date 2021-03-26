@@ -1,32 +1,70 @@
 package com.eomcs.pms.handler;
 
-import java.util.Iterator;
-import com.eomcs.driver.Statement;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import com.eomcs.util.Prompt;
 
-public class ProjectDetailHandler implements Command{
+public class ProjectDetailHandler implements Command {
 
-  Statement stmt;
-
-  public ProjectDetailHandler(Statement stmt) {
-    this.stmt = stmt;
-  }
   @Override
   public void service() throws Exception {
     System.out.println("[프로젝트 상세보기]");
 
     int no = Prompt.inputInt("번호? ");
-    Iterator<String> results = stmt.executeQuery("project/select", Integer.toString(no));
 
+    try (Connection con = DriverManager.getConnection( //
+        "jdbc:mysql://localhost:3306/studydb?user=study&password=1111");
+        PreparedStatement stmt = con.prepareStatement( //
+            "select" 
+            + "    p.no,"
+            + "    p.title,"
+            + " p.content,"
+            + "    p.sdt,"
+            + "    p.edt,"
+            + "    m.no as owner_no,"
+            + "    m.name as owner_name"
+            + "  from pms_project p"
+            + "    inner join pms_member m on p.owner=m.no"
+            + " where p.no = ?");
+        PreparedStatement stmt2 = con.prepareStatement(
+            "select" 
+                + "    m.no,"
+                + "    m.name"
+                + " from pms_member_project mp"
+                + "     inner join pms_member m on mp.member_no=m.no"
+                + " where "
+                + "     mp.project_no=?");
+        )
+    {
 
-    String[] fields = results.next().split(",");
+      stmt.setInt(1, no);
 
-    System.out.printf("프로젝트명: %s\n", fields[1]);
-    System.out.printf("내용: %s\n", fields[2]);
-    System.out.printf("시작일: %s\n", fields[3]);
-    System.out.printf("종료일: %s\n", fields[4]);
-    System.out.printf("관리자: %s\n", fields[5]);
-    System.out.printf("팀원: %s\n", fields[6]);
+      try(ResultSet rs = stmt.executeQuery()) {
+        if(!rs.next()) {
+          System.out.println("해당 번호의 프로젝트가 없습니다.");
+          return;
+        }
+        String members = "";
+        stmt2.setInt(1, no);
+        try(ResultSet memberRs = stmt2.executeQuery()) {
+          while(memberRs.next()) {
+            if(members.length() > 0) {
+              members += "/";
+            }
+            members += memberRs.getString("name");
+          }
+        }
+        System.out.printf("프로젝트 번호 : %d\n", rs.getInt("no"));
+        System.out.printf("프로젝트명: %s\n", rs.getString("title"));
+        System.out.printf("내용: %s\n", rs.getString("content"));
+        System.out.printf("시작일: %s\n", rs.getDate("sdt"));
+        System.out.printf("종료일: %s\n", rs.getDate("edt"));
+        System.out.printf("관리자: %s\n", rs.getString("owner_name"));
+        System.out.printf("팀원: [%s]\n", members);
+      }
+    }
   }
 }
 

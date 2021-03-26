@@ -15,7 +15,7 @@ public class MemberListHandler implements Command {
         "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
         );
         PreparedStatement stmt = con.prepareStatement(
-            "select no, name, email, photo, tel, cdt from pms_member order by no"
+            "select no, name, email, photo, tel, cdt from pms_member order by name asc;"
             );
         ResultSet rs = stmt.executeQuery()
         ) {

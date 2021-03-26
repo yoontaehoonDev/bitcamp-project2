@@ -13,8 +13,8 @@ public class MemberDeleteHandler implements Command {
 
     int no = Prompt.inputInt("번호? ");
 
-    String check = Prompt.inputString("정말 삭제하시겠습니까?(Y/N) ");
-    if(!check.equalsIgnoreCase("Y")) {
+    String input = Prompt.inputString("정말 삭제하시겠습니까?(Y/N) ");
+    if(!input.equalsIgnoreCase("Y")) {
       System.out.println("회원 삭제를 취소하였습니다.");
       return;
     }

@@ -20,11 +20,10 @@ public class MemberUpdateHandler implements Command {
         PreparedStatement stmt = con.prepareStatement(
             "select no,name,email,photo,tel from pms_member where no=?");
         PreparedStatement stmt2 = con.prepareStatement(
-            "update pms_member set name=?, email=?, photo=?, tel=? where no=?")) {
+            "update pms_member set name=?, email=?, password=password(?), photo=?, tel=? where no=?")) {
 
       Member member = new Member();
 
-      // 1) 기존 데이터 조회
       stmt.setInt(1, no);
       try (ResultSet rs = stmt.executeQuery()) {
         if (!rs.next()) {
@@ -40,9 +39,9 @@ public class MemberUpdateHandler implements Command {
 
       }
 
-      // 2) 사용자에게서 변경할 데이터를 입력 받는다.
       member.setName(Prompt.inputString(String.format("이름(%s)? ", member.getName())));
       member.setEmail(Prompt.inputString(String.format("이메일(%s)? ", member.getEmail())));
+      member.setPassword(Prompt.inputString("암호? "));
       member.setPhoto(Prompt.inputString(String.format("사진(%s)? ", member.getPhoto())));
       member.setTel(Prompt.inputString(String.format("전화번호(%s)? ", member.getTel())));
 
@@ -53,12 +52,12 @@ public class MemberUpdateHandler implements Command {
         return;
       }
 
-      // 3) DBMS에게 게시글 변경을 요청한다.
       stmt2.setString(1, member.getName());
       stmt2.setString(2, member.getEmail());
-      stmt2.setString(3, member.getPhoto());
-      stmt2.setString(4, member.getTel());
-      stmt2.setInt(5, member.getNo());
+      stmt2.setString(3, member.getPassword());
+      stmt2.setString(4, member.getPhoto());
+      stmt2.setString(5, member.getTel());
+      stmt2.setInt(6, member.getNo());
       stmt2.executeUpdate();
 
       System.out.println("게시글을 변경하였습니다.");

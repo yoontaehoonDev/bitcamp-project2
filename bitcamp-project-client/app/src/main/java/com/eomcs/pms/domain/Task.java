@@ -12,12 +12,12 @@ public class Task {
   public Task() {}
 
   public Task(String csv) {
-    String[] fields = csv.split(",");
-    this.setNo(Integer.valueOf(fields[0]));
-    this.setContent(fields[1]);
-    this.setDeadline(Date.valueOf(fields[2]));
-    this.setStatus(Integer.valueOf(fields[4]));
-    this.setOwner(fields[3]);
+    String[] data = csv.split(",");
+    this.setNo(Integer.parseInt(data[0]));
+    this.setContent(data[1]);
+    this.setDeadline(Date.valueOf(data[2]));
+    this.setStatus(Integer.parseInt(data[3]));
+    this.setOwner(data[4]);
   }
 
   @Override
@@ -26,18 +26,13 @@ public class Task {
         + ", status=" + status + "]";
   }
 
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((content == null) ? 0 : content.hashCode());
-    result = prime * result + ((deadline == null) ? 0 : deadline.hashCode());
-    result = prime * result + no;
-    return result;
-  }
-
   public String toCsvString() {
-    return String.format("%d,%s,%s,%s,%s\n", this.getNo(), this.getContent(), this.getDeadline().toString(), this.getStatus(), this.getOwner());
+    return String.format("%d,%s,%s,%d,%s", 
+        this.getNo(),
+        this.getContent(),
+        this.getDeadline(),
+        this.getStatus(),
+        this.getOwner());
   }
 
   public static Task valueOfCsv(String csv) {
@@ -49,6 +44,16 @@ public class Task {
     task.setStatus(Integer.parseInt(data[3]));
     task.setOwner(data[4]);
     return task;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((content == null) ? 0 : content.hashCode());
+    result = prime * result + ((deadline == null) ? 0 : deadline.hashCode());
+    result = prime * result + no;
+    return result;
   }
 
   @Override
@@ -106,5 +111,14 @@ public class Task {
     this.status = status;
   }
 
-
+  public static String getStatusLabel(int status) {
+    switch (status) {
+      case 1:
+        return "진행중";
+      case 2:
+        return "완료";
+      default:
+        return "신규";
+    }
+  }
 }
