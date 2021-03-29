@@ -8,30 +8,33 @@ import java.sql.ResultSet;
 public class BoardListHandler implements Command {
 
 
-	@Override
-	public void service() throws Exception {
-		System.out.println("[게시글 목록]");
+  @Override
+  public void service() throws Exception {
+    System.out.println("[게시글 목록]");
 
-		// 서버에 게시글 목록을 달라고 요청한다.
+    // 서버에 게시글 목록을 달라고 요청한다.
 
 
-		try (Connection con = DriverManager.getConnection( //
-				"jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-				PreparedStatement stmt = con.prepareStatement( //
-						"select no, title, writer, cdt, vw_cnt from pms_board order by no desc");
-				ResultSet rs = stmt.executeQuery()) {
+    try (Connection con = DriverManager.getConnection( //
+        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
+        PreparedStatement stmt = con.prepareStatement( //
+            "select b.no, b.title, b.writer, b.cdt, b.vw_cnt, m.name m_name"
+            + " from pms_board b"
+            + " inner join pms_member m on m.no=b.writer"
+            + " order by b.no desc");
+        ResultSet rs = stmt.executeQuery()) {
 
-			while (rs.next()) {
-				System.out.printf("%s, %s, %s, %s, %s\n", 
-						rs.getInt("no"),
-						rs.getString("title"),
-						rs.getString("writer"),
-						rs.getDate("cdt"),
-						rs.getInt("vw_cnt"));
+      while (rs.next()) {
+        System.out.printf("%s, %s, %s, %s, %s\n", 
+            rs.getInt("no"),
+            rs.getString("title"),
+            rs.getString("m_name"),
+            rs.getDate("cdt"),
+            rs.getInt("vw_cnt"));
 
-			}
-		}
-	}
+      }
+    }
+  }
 }
 
 

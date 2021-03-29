@@ -4,43 +4,45 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
 import com.eomcs.util.Prompt;
 
 public class BoardDetailHandler implements Command {
 
-	@Override
-	public void service() throws Exception {
-		System.out.println("[게시글 상세보기]");
+  @Override
+  public void service() throws Exception {
+    System.out.println("[게시글 상세보기]");
 
-		int no = Prompt.inputInt("번호? ");
-
-
-		try (Connection con = DriverManager.getConnection( //
-				"jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-				PreparedStatement stmt = con.prepareStatement( //
-						"select * from pms_board where no = ?")) {
-
-			stmt.setInt(1, no);
-
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (!rs.next()) {
-					System.out.println("해당 번호의 게시글이 없습니다.");
-					return;
-				}
-
-				System.out.printf("제목 : %s\n", rs.getString("title"));
-				System.out.printf("내용 : %s\n", rs.getString("content"));
-				System.out.printf("작성자 : %s\n", rs.getString("writer"));
-				System.out.printf("등록일 : %s %s\n", rs.getDate("cdt"), rs.getTime("cdt"));
-				System.out.printf("조회수 : %s\n", rs.getInt("vw_cnt"));
-				System.out.printf("좋아요 : %s\n", rs.getInt("like_cnt"));
-			}
-		}
+    int no = Prompt.inputInt("번호? ");
 
 
+    try (Connection con = DriverManager.getConnection( //
+        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
+        PreparedStatement stmt = con.prepareStatement( //
+            "select b.no, b.title, b.content, b.writer, b.cdt, b.vw_cnt, b.like_cnt, m.name m_name"
+            + " from pms_board b"
+            + " inner join pms_member m on b.writer=m.no"
+            + " where b.no = ?")) {
 
-	}
+      stmt.setInt(1, no);
+
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (!rs.next()) {
+          System.out.println("해당 번호의 게시글이 없습니다.");
+          return;
+        }
+
+        System.out.printf("제목 : %s\n", rs.getString("title"));
+        System.out.printf("내용 : %s\n", rs.getString("content"));
+        System.out.printf("작성자 : %s\n", rs.getString("m_name"));
+        System.out.printf("등록일 : %s %s\n", rs.getDate("cdt"), rs.getTime("cdt"));
+        System.out.printf("조회수 : %s\n", rs.getInt("vw_cnt"));
+        System.out.printf("좋아요 : %s\n", rs.getInt("like_cnt"));
+      }
+    }
+
+
+
+  }
 
 }
 
