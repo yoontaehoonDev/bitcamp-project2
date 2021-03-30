@@ -8,8 +8,8 @@ import com.eomcs.util.Prompt;
 
 public class ProjectUpdateHandler implements Command {
 
-  MemberValidator memberValidator;
   ProjectDao projectDao;
+  MemberValidator memberValidator;
 
   public ProjectUpdateHandler(ProjectDao projectDao, MemberValidator memberValidator) {
     this.projectDao = projectDao;
@@ -22,33 +22,42 @@ public class ProjectUpdateHandler implements Command {
 
     int no = Prompt.inputInt("번호? ");
 
-    Project projects = projectDao.findByNo(no);
+    Project project = projectDao.findByNo(no);
 
-    if(projects == null) {
-      System.out.println("해당 번호의 프로젝트가 존재하지 않습니다.");
+    if (project == null) {
+      System.out.println("해당 번호의 프로젝트가 없습니다.");
       return;
     }
 
-    projects.setTitle(Prompt.inputString(
-        String.format("프로젝트명(%s)? ", projects.getTitle())));
-    projects.setContent(Prompt.inputString(
-        String.format("내용(%s)? ", projects.getContent())));
-    projects.setStartDate(Prompt.inputDate(
-        String.format("시작일(%s)? ", projects.getStartDate())));
-    projects.setEndDate(Prompt.inputDate(
-        String.format("종료일(%s)? ", projects.getEndDate())));
-    projects.setOwner(memberValidator.inputMember(
-        String.format("만든이(%s)?(취소: 빈 문자열) ", projects.getOwner())));
+    // 사용자에게서 변경할 데이터를 입력 받는다.
+    project.setTitle(Prompt.inputString(
+        String.format("프로젝트명(%s)? ", project.getTitle())));
+    project.setContent(Prompt.inputString(
+        String.format("내용(%s)? ", project.getContent())));
+    project.setStartDate(Prompt.inputDate(
+        String.format("시작일(%s)? ", project.getStartDate())));
+    project.setEndDate(Prompt.inputDate(
+        String.format("종료일(%s)? ", project.getEndDate())));
+    project.setOwner(memberValidator.inputMember(
+        String.format("만든이(%s)?(취소: 빈 문자열) ", project.getOwner().getName())));
 
-    if (projects.getOwner() == null) {
+    if (project.getOwner() == null) {
       System.out.println("프로젝트 변경을 취소합니다.");
       return;
     }
 
-    projects.setMembers(memberValidator.inputMembers(
-        String.format("팀원(%s)?(완료: 빈 문자열) ", projects.getMembers())));
+    // 프로젝트 팀원 정보를 입력 받는다.
+    StringBuilder strBuilder = new StringBuilder();
+    List<Member> members = project.getMembers();
+    for (Member m : members) {
+      if (strBuilder.length() > 0) {
+        strBuilder.append("/");
+      }
+      strBuilder.append(m.getName());
+    }
 
-    List<Member> list = projectDao.insertMembers();
+    project.setMembers(memberValidator.inputMembers(
+        String.format("팀원(%s)?(완료: 빈 문자열) ", strBuilder)));
 
     String input = Prompt.inputString("정말 변경하시겠습니까?(y/N) ");
     if (!input.equalsIgnoreCase("Y")) {
@@ -56,7 +65,8 @@ public class ProjectUpdateHandler implements Command {
       return;
     }
 
-    projectDao.update(projects);
+    // DBMS에게 프로젝트 변경을 요청한다.
+    projectDao.update(project);
 
     System.out.println("프로젝트을 변경하였습니다.");
   }

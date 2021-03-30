@@ -10,23 +10,24 @@ import java.util.List;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.domain.Project;
 
+// 한 번에 4번째 단계까지 가지말고 일단 3번째와 4번째 단계 사이에 있는 정도로 구현을 해보자.
+// - 각 DAO 클래스는 Connection 객체를 공유하기 위해 인스턴스 필드로 선언한다.
+// - 각 DAO 클래스는 DAO 인스턴스가 생성될 때 Connection 객체를 만든다.
 public class ProjectDao {
 
   Connection con;
 
   public ProjectDao() throws Exception {
     this.con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
-        );
+        "jdbc:mysql://localhost:3306/studydb?user=study&password=1111");
   }
 
-  public int insert(Project p) throws Exception {
-
+  // 이제 메서드들은 인스턴스 필드에 들어있는 Connection 객체를 사용해야 하기 때문에
+  // 스태틱 메서드가 아닌 인스턴스 메서드로 선언해야 한다.
+  public int insert(Project project) throws Exception {
     try (PreparedStatement stmt = con.prepareStatement(
         "insert into pms_project(title,content,sdt,edt,owner) values(?,?,?,?,?)",
-        Statement.RETURN_GENERATED_KEYS);
-        PreparedStatement stmt2 = con.prepareStatement(
-            "insert into pms_member_project(member_no,project_no) values(?,?)")) {
+        Statement.RETURN_GENERATED_KEYS)) {
 
       // 수동 커밋으로 설정한다.
       // - pms_project 테이블과 pms_member_project 테이블에 모두 성공적으로 데이터를 저장했을 때 
@@ -34,49 +35,38 @@ public class ProjectDao {
       con.setAutoCommit(false); // 의미 => 트랜잭션 시작
 
       // 1) 프로젝트를 추가한다.
-      stmt.setString(1, p.getTitle());
-      stmt.setString(2, p.getContent());
-      stmt.setDate(3, p.getStartDate());
-      stmt.setDate(4, p.getEndDate());
-      stmt.setInt(5, p.getOwner().getNo());
-      stmt.executeUpdate();
+      stmt.setString(1, project.getTitle());
+      stmt.setString(2, project.getContent());
+      stmt.setDate(3, project.getStartDate());
+      stmt.setDate(4, project.getEndDate());
+      stmt.setInt(5, project.getOwner().getNo());
+      int count = stmt.executeUpdate();
 
       // 프로젝트 데이터의 PK 값 알아내기
       try (ResultSet keyRs = stmt.getGeneratedKeys()) {
         keyRs.next();
-        p.setNo(keyRs.getInt(1)); // 컬럼은 인덱스와 다르게 1부터 시작
+        project.setNo(keyRs.getInt(1));
       }
 
       // 2) 프로젝트에 팀원들을 추가한다.
-      for (Member member : p.getMembers()) {
-        stmt2.setInt(1, member.getNo());
-        stmt2.setInt(2, p.getNo());
-        stmt2.executeUpdate();
+      for (Member member : project.getMembers()) {
+        insertMember(project.getNo(), member.getNo());
       }
+
       // 프로젝트 정보 뿐만 아니라 팀원 정보도 정상적으로 입력되었다면,
       // 실제 테이블에 데이터를 적용한다.
       con.commit(); // 의미 : 트랜잭션 종료
 
-      return 1;
+      return count;
 
-    }
-  }
-
-  public int delete(int no) throws Exception {
-
-    try (Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-        PreparedStatement stmt = con.prepareStatement(
-            "delete pm, p from pms_member_project pm"
-                + " left join pms_project p on pm.project_no=p.no where pm.project_no=?");
-        ) {
-
-      stmt.setInt(1, no);
-      return stmt.executeUpdate();
+    } finally {
+      // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
+      con.setAutoCommit(true);
     }
   }
 
   public List<Project> findAll() throws Exception {
+    ArrayList<Project> list = new ArrayList<>();
 
     try (PreparedStatement stmt = con.prepareStatement(
         "select" 
@@ -89,54 +79,33 @@ public class ProjectDao {
             + "  from pms_project p"
             + "    inner join pms_member m on p.owner=m.no"
             + "  order by title asc");
-        PreparedStatement stmt2 = con.prepareStatement(
-            "select" 
-                + "    m.no,"
-                + "    m.name"
-                + " from pms_member_project mp"
-                + "     inner join pms_member m on mp.member_no=m.no"
-                + " where "
-                + "     mp.project_no=?");
-        ResultSet rs = stmt.executeQuery();
-        ) {
+        ResultSet rs = stmt.executeQuery()) {
 
-      ArrayList<Project> list = new ArrayList<>();
-      while(rs.next()) {
-        Project p = new Project();
-        p.setNo(rs.getInt("no"));
-        p.setTitle(rs.getString("title"));
-        p.setStartDate(rs.getDate("sdt"));
-        p.setEndDate(rs.getDate("edt"));
+      while (rs.next()) {
+        Project project = new Project();
+        project.setNo(rs.getInt("no"));
+        project.setTitle(rs.getString("title"));
+        project.setStartDate(rs.getDate("sdt"));
+        project.setEndDate(rs.getDate("edt"));
 
         Member owner = new Member();
         owner.setNo(rs.getInt("owner_no"));
         owner.setName(rs.getString("owner_name"));
-        p.setOwner(owner);
+        project.setOwner(owner);
 
-        stmt2.setInt(1, p.getNo());
+        project.setMembers(findAllMembers(project.getNo()));
 
-
-        List<Member> members = new ArrayList<>();
-        try (ResultSet membersRs = stmt2.executeQuery()) {
-          while (membersRs.next()) {
-            Member m = new Member();
-            m.setNo(membersRs.getInt("no"));
-            m.setName(membersRs.getString("name"));
-            members.add(m);
-          }
-          p.setMembers(members);
-        }
-        list.add(p);
+        list.add(project);
       }
-      return list;
     }
+    return list;
   }
 
   public Project findByNo(int no) throws Exception {
     try (PreparedStatement stmt = con.prepareStatement(
         "select"
-            + "    p.title,"
             + "    p.no,"
+            + "    p.title,"
             + "    p.content,"
             + "    p.sdt,"
             + "    p.edt,"
@@ -144,54 +113,35 @@ public class ProjectDao {
             + "    m.name as owner_name"
             + "  from pms_project p"
             + "    inner join pms_member m on p.owner=m.no"
-            + " where p.no=?");
-        PreparedStatement stmt2 = con.prepareStatement(
-            "select" 
-                + "    m.no,"
-                + "    m.name"
-                + " from pms_member_project mp"
-                + "     inner join pms_member m on mp.member_no=m.no"
-                + " where "
-                + "     mp.project_no=?");
-        ) {
+            + " where p.no=?")) {
 
       stmt.setInt(1, no);
-      stmt2.setInt(1, no);
 
-      try(ResultSet rs = stmt.executeQuery()) {
-        if(!rs.next()) {
+      try (ResultSet rs = stmt.executeQuery()) {
+        if (!rs.next()) {
           return null;
         }
 
-        Project p = new Project();
-        p.setNo(rs.getInt("no"));
-        p.setTitle(rs.getString("title"));
-        p.setContent(rs.getString("content"));
-        p.setStartDate(rs.getDate("sdt"));
-        p.setEndDate(rs.getDate("edt"));
+        Project project = new Project();
+        project.setNo(rs.getInt("no"));
+        project.setTitle(rs.getString("title"));
+        project.setContent(rs.getString("content"));
+        project.setStartDate(rs.getDate("sdt"));
+        project.setEndDate(rs.getDate("edt"));
 
         Member owner = new Member();
-        owner.setNo(rs.getInt("no"));
-        owner.setName(rs.getString("name"));
-        p.setOwner(owner);
+        owner.setNo(rs.getInt("owner_no"));
+        owner.setName(rs.getString("owner_name"));
+        project.setOwner(owner);
 
-        List<Member> members = new ArrayList<>();
-        try (ResultSet membersRs = stmt2.executeQuery()) {
-          while (membersRs.next()) {
-            Member m = new Member();
-            m.setName(membersRs.getString("name"));
-            members.add(m);
-          }
-          p.setMembers(members);
-        }
+        project.setMembers(findAllMembers(project.getNo()));
 
-        return p;
+        return project;
       }
     }
   }
 
-  public void update(Project project) throws Exception {
-
+  public int update(Project project) throws Exception {
     try (PreparedStatement stmt = con.prepareStatement(
         "update pms_project set"
             + " title=?,"
@@ -199,11 +149,7 @@ public class ProjectDao {
             + " sdt=?,"
             + " edt=?,"
             + " owner=?"
-            + " where no=?");
-        PreparedStatement stmt2 = con.prepareStatement( 
-            "delete from pms_member_project where project_no=?");
-        PreparedStatement stmt3 = con.prepareStatement(
-            "insert into pms_member_project(member_no,project_no) values(?,?)")) {
+            + " where no=?")) { 
 
       con.setAutoCommit(false);
 
@@ -213,28 +159,102 @@ public class ProjectDao {
       stmt.setDate(4, project.getEndDate());
       stmt.setInt(5, project.getOwner().getNo());
       stmt.setInt(6, project.getNo());
-      stmt.executeUpdate();
+      int count = stmt.executeUpdate();
 
-      // 5) 프로젝트의 기존 멤버를 삭제한다.
+      // 기존 프로젝트의 모든 멤버를 삭제한다.
+      deleteMembers(project.getNo());
 
-      stmt2.setInt(1, project.getNo());
-      stmt2.executeUpdate();
-
-      // 6) 사용자가 선택한 프로젝트 멤버들을 추가한다.
+      // 프로젝트 멤버를 추가한다.
       for (Member member : project.getMembers()) {
-        stmt3.setInt(1, member.getNo());
-        stmt3.setInt(2, project.getNo());
-        stmt3.executeUpdate();
+        insertMember(project.getNo(), member.getNo());
       }
 
       con.commit();
+
+      return count;
+
+    } finally {
+      // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
+      con.setAutoCommit(true);
+    }
+  }
+
+  public int delete(int no) throws Exception {
+    try (PreparedStatement stmt = con.prepareStatement(
+        "delete from pms_project where no=?")) {
+
+      con.setAutoCommit(false);
+
+      // 프로젝트에 소속된 팀원 정보 삭제
+      deleteMembers(no);
+
+      // 프로젝트 정보 삭제
+      stmt.setInt(1, no);
+      int count = stmt.executeUpdate();
+      con.commit();
+
+      return count;
+
+    } finally {
+      // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
+      con.setAutoCommit(true);
+    }
+  }
+
+  public int insertMember(int projectNo, int memberNo) throws Exception {
+    try (PreparedStatement stmt = con.prepareStatement(
+        "insert into pms_member_project(member_no,project_no) values(?,?)")) {
+
+      stmt.setInt(1, memberNo);
+      stmt.setInt(2, projectNo);
+      return stmt.executeUpdate();
+    }
+  }
+
+  public List<Member> findAllMembers(int projectNo) throws Exception {
+    ArrayList<Member> list = new ArrayList<>();
+
+    try (PreparedStatement stmt = con.prepareStatement(
+        "select" 
+            + "    m.no,"
+            + "    m.name"
+            + " from pms_member_project mp"
+            + "     inner join pms_member m on mp.member_no=m.no"
+            + " where "
+            + "     mp.project_no=?")) {
+
+      stmt.setInt(1, projectNo);
+
+      try (ResultSet memberRs = stmt.executeQuery()) {
+        while (memberRs.next()) {
+          Member m = new Member();
+          m.setNo(memberRs.getInt("no"));
+          m.setName(memberRs.getString("name"));
+          list.add(m);
+        }
+      }
     }
 
+    return list;
   }
 
-  public List<Member> insertMembers() {
-
+  public int deleteMembers(int projectNo) throws Exception {
+    try (PreparedStatement stmt = con.prepareStatement( 
+        "delete from pms_member_project where project_no=?")) { 
+      stmt.setInt(1, projectNo);
+      return stmt.executeUpdate();
+    }
   }
-
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
