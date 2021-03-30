@@ -11,6 +11,13 @@ public class Board {
   private int viewCount;
   private int like;
 
+  @Override
+  public String toString() {
+    return "Board [no=" + no + ", title=" + title + ", content=" + content + ", writer=" + writer
+        + ", registeredDate=" + registeredDate + ", viewCount=" + viewCount + ", like=" + like
+        + "]";
+  }
+
   public int getNo() {
     return no;
   }

@@ -1,14 +1,20 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import com.eomcs.pms.dao.BoardDao;
 import com.eomcs.pms.domain.Board;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.util.Prompt;
 
 public class BoardAddHandler implements Command {
+
+  // 핸들러가 사용할 DAO
+  BoardDao boardDao;
+
+  // DAO 객체는 이 클래스가 작업하는데 필수 객체이기 때문에
+  // 생성자를 통해, 반드시 주입 받도록 한다.
+  public BoardAddHandler(BoardDao boardDao) {
+    this.boardDao = boardDao;
+  }
 
   @Override
   public void service() throws Exception {
@@ -20,39 +26,13 @@ public class BoardAddHandler implements Command {
     b.setTitle(Prompt.inputString("제목? "));
     b.setContent(Prompt.inputString("내용? "));
 
+    Member writer = new Member();
+    writer.setNo(Prompt.inputInt("작성자 번호? "));
+    b.setWriter(writer);
 
-    try (Connection con = DriverManager.getConnection( //
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-        PreparedStatement stmt =
-            con.prepareStatement("insert into pms_board(title, content, writer) values(?,?,?)");
-        PreparedStatement stmt2 = con.prepareStatement(
-            "select no from pms_member where no = ?"
-            );
-        ) {
-      int num = Prompt.inputInt("회원 번호?(취소 : 빈 문자열) ");
-
-      stmt2.setInt(1, num);
-
-      try(ResultSet rs = stmt2.executeQuery()) {
-        if(!rs.next()) {
-          System.out.println("존재하지 않는 회원입니다.");
-          return;
-        }
-      }
-
-      Member m = new Member();
-      m.setNo(num);
-
-      stmt.setString(1, b.getTitle());
-      stmt.setString(2, b.getContent());
-      stmt.setInt(3, m.getNo());
-
-      stmt.executeUpdate();
-    }
-
-
-
+    boardDao.insert(b);
     System.out.println("게시글을 등록하였습니다.");
+
 
   }
 }

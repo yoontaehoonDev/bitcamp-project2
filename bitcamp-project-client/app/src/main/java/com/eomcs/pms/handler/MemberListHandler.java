@@ -1,9 +1,8 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.List;
+import com.eomcs.pms.dao.MemberDao;
+import com.eomcs.pms.domain.Member;
 
 public class MemberListHandler implements Command {
 
@@ -11,25 +10,17 @@ public class MemberListHandler implements Command {
   public void service() throws Exception {
     System.out.println("[회원 목록]");
 
-    try(Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
-        );
-        PreparedStatement stmt = con.prepareStatement(
-            "select no, name, email, photo, tel, cdt from pms_member order by name asc;"
-            );
-        ResultSet rs = stmt.executeQuery()
-        ) {
+    List<Member> list = MemberDao.findAll();
 
-      while(rs.next()) {
-        System.out.printf("번호 : %d 이름 : %s 이메일 : %s 사진 : %s 번호 : %s 가입일 : %s\n",
-            rs.getInt("no"),
-            rs.getString("name"),
-            rs.getString("email"),
-            rs.getString("photo"),
-            rs.getString("tel"),
-            rs.getDate("cdt")
-            );
-      }
+    for(Member m : list) {
+      System.out.printf("번호 : %d 이름 : %s 이메일 : %s 사진 : %s 번호 : %s 가입일 : %s\n",
+          m.getNo(),
+          m.getName(),
+          m.getEmail(),
+          m.getPhoto(),
+          m.getTel(),
+          m.getRegisteredDate()
+          );
     }
   }
 }

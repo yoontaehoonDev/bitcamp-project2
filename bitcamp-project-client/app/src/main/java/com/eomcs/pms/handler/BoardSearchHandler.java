@@ -1,12 +1,17 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.List;
+import com.eomcs.pms.dao.BoardDao;
+import com.eomcs.pms.domain.Board;
 import com.eomcs.util.Prompt;
 
 public class BoardSearchHandler implements Command {
+
+  BoardDao boardDao;
+
+  public BoardSearchHandler(BoardDao boardDao) {
+    this.boardDao = boardDao;
+  }
 
   @Override
   public void service() throws Exception {
@@ -16,38 +21,16 @@ public class BoardSearchHandler implements Command {
       System.out.println("검색어를 입력하세요.");
       return;
     }
+    List<Board> list = boardDao.findByKeyword(keyword);
 
-    try (Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-        PreparedStatement stmt = con.prepareStatement(
-            "select b.no, b.title, b.content, b.writer, b.cdt, b.vw_cnt, m.name m_name"
-                + " from pms_board b"
-                + " inner join pms_member m on m.no=b.writer"
-                + " where title like concat('%',?,'%') "
-                + " or content like concat('%',?,'%')"
-                + " or m.name like concat('%',?,'%')"
-                + " order by b.no desc")) {
-
-      stmt.setString(1, keyword);
-      stmt.setString(2, keyword);
-      stmt.setString(3, keyword);
-
-      try(ResultSet rs = stmt.executeQuery()) {
-        if(!rs.next()) {
-          System.out.println("검색어에 해당하는 게시글이 없습니다.");
-          return;
-        }
-
-        do {
-          System.out.printf("%s, %s, %s, %s, %s\n", 
-              rs.getInt("no"),
-              rs.getString("title"),
-              rs.getString("m_name"),
-              rs.getDate("cdt"),
-              rs.getInt("vw_cnt"));
-
-        } while(rs.next());
-      }
+    for(Board b : list) {
+      System.out.printf("%d, %s, %s, %s, %d\n",
+          b.getNo(),
+          b.getTitle(),
+          b.getWriter().getName(),
+          b.getRegisteredDate(),
+          b.getViewCount()
+          );
     }
 
   }
