@@ -26,8 +26,7 @@ public class Member {
 
   @Override
   public String toString() {
-    return "Member [no=" + no + ", name=" + name + ", email=" + email + ", password=" + password
-        + ", photo=" + photo + ", tel=" + tel + ", registeredDate=" + registeredDate + "]";
+    return name;
   }
 
   public String toCsvString() {

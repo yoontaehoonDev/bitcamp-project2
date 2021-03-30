@@ -1,12 +1,16 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import com.eomcs.pms.dao.MemberDao;
+import com.eomcs.pms.domain.Member;
 import com.eomcs.util.Prompt;
 
 public class MemberDetailHandler implements Command {
+
+  MemberDao memberDao;
+
+  public MemberDetailHandler(MemberDao memberDao) {
+    this.memberDao = memberDao;
+  }
 
   @Override
   public void service() throws Exception {
@@ -14,27 +18,19 @@ public class MemberDetailHandler implements Command {
 
     int no = Prompt.inputInt("번호? ");
 
-    try(Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
-        );
-        PreparedStatement stmt = con.prepareStatement(
-            "select no, name, email, photo, tel, cdt from pms_member where no = ?"
-            )) {
-      stmt.setInt(1, no);
+    Member member = memberDao.findByNo(no);
 
-      try(ResultSet rs = stmt.executeQuery()) {
-        if(!rs.next()) {
-          System.out.println("해당 번호의 회원이 없습니다.");
-          return;
-        }
-        System.out.printf("번호 : %d\n", rs.getInt("no"));
-        System.out.printf("이름: %s\n", rs.getString("name"));
-        System.out.printf("이메일: %s\n", rs.getString("email"));
-        System.out.printf("사진: %s\n", rs.getString("photo"));
-        System.out.printf("전화: %s\n", rs.getString("tel"));
-        System.out.printf("가입일: %s %s\n", rs.getDate("cdt"), rs.getTime("cdt"));
-      }
+    if(member == null) {
+      System.out.println("해당 번호의 회원이 존재하지 않습니다.");
+      return;
     }
+
+    System.out.printf("번호 : %d\n", member.getNo());
+    System.out.printf("이름: %s\n", member.getName());
+    System.out.printf("이메일: %s\n", member.getEmail());
+    System.out.printf("사진: %s\n", member.getPhoto());
+    System.out.printf("전화: %s\n", member.getTel());
+    System.out.printf("가입일: %s\n", member.getRegisteredDate());
   }
 }
 

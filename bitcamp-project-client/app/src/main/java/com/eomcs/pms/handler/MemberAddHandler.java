@@ -6,6 +6,12 @@ import com.eomcs.util.Prompt;
 
 public class MemberAddHandler implements Command {
 
+  MemberDao memberDao;
+
+  public MemberAddHandler(MemberDao memberDao) {
+    this.memberDao = memberDao;
+  }
+
   @Override
   public void service() throws Exception {
     System.out.println("[회원 등록]");
@@ -19,7 +25,7 @@ public class MemberAddHandler implements Command {
     m.setTel(Prompt.inputString("전화번호? "));
     m.setRegisteredDate(new java.sql.Date(System.currentTimeMillis()));
 
-    MemberDao.insert(m);
+    memberDao.insert(m);
 
     System.out.println("회원을 등록하였습니다.");
   }

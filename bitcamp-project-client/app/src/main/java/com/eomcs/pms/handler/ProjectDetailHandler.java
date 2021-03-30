@@ -1,72 +1,38 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-
+import com.eomcs.pms.dao.ProjectDao;
+import com.eomcs.pms.domain.Project;
 import com.eomcs.util.Prompt;
 
 public class ProjectDetailHandler implements Command {
 
-	@Override
-	public void service() throws Exception {
-		System.out.println("[프로젝트 상세보기]");
+  ProjectDao projectDao;
 
-		int no = Prompt.inputInt("번호? ");
+  public ProjectDetailHandler(ProjectDao projectDao) throws Exception {
+    this.projectDao = projectDao;
+  }
 
-		try (Connection con = DriverManager.getConnection(
-				"jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-				PreparedStatement stmt = con.prepareStatement(
-						"select"
-								+ "    p.no,"
-								+ "    p.title,"
-								+ "    p.content,"
-								+ "    p.sdt,"
-								+ "    p.edt,"
-								+ "    m.no as owner_no,"
-								+ "    m.name as owner_name"
-								+ "  from pms_project p"
-								+ "    inner join pms_member m on p.owner=m.no"
-								+ " where p.no=?");
-				PreparedStatement stmt2 = con.prepareStatement(
-						"select" 
-								+ "    m.no,"
-								+ "    m.name"
-								+ " from pms_member_project mp"
-								+ "     inner join pms_member m on mp.member_no=m.no"
-								+ " where "
-								+ "     mp.project_no=?")) {
+  @Override
+  public void service() throws Exception {
+    System.out.println("[프로젝트 상세보기]");
 
-			stmt.setInt(1, no);
+    int no = Prompt.inputInt("번호? ");
 
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (!rs.next()) {
-					System.out.println("해당 번호의 프로젝트가 없습니다.");
-					return;
-				}
+    Project p = projectDao.findByNo(no);
 
-				System.out.printf("프로젝트명: %s\n", rs.getString("title"));
-				System.out.printf("내용: %s\n", rs.getString("content"));
-				System.out.printf("시작일: %s\n", rs.getDate("sdt"));
-				System.out.printf("종료일: %s\n", rs.getDate("edt"));
-				System.out.printf("관리자: %s\n", rs.getString("owner_name"));
+    if(p == null) {
+      System.out.println("해당 번호의 프로젝트가 존재하지 않습니다.");
+      return;
+    }
 
-				StringBuilder strings = new StringBuilder();
+    System.out.printf("프로젝트명: %s\n", p.getTitle());
+    System.out.printf("내용: %s\n", p.getContent());
+    System.out.printf("시작일: %s\n", p.getStartDate());
+    System.out.printf("종료일: %s\n", p.getEndDate());
+    System.out.printf("관리자: %s\n", p.getOwner().getName());
+    System.out.printf("팀원: %s\n", p.getMembers());
 
-				stmt2.setInt(1, no);
-				try (ResultSet membersRs = stmt2.executeQuery()) {
-					while (membersRs.next()) {
-						if (strings.length() > 0) {
-							strings.append(",");
-						}
-						strings.append(membersRs.getString("name"));
-					}
-				}
-				System.out.printf("팀원: %s\n", strings);
-			}
-		}
-	}
+  }
 }
 
 

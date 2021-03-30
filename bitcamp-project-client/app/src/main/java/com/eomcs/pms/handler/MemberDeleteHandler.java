@@ -1,11 +1,16 @@
 package com.eomcs.pms.handler;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
+import com.eomcs.pms.dao.MemberDao;
+import com.eomcs.pms.domain.Member;
 import com.eomcs.util.Prompt;
 
 public class MemberDeleteHandler implements Command {
+
+  MemberDao memberDao;
+
+  public MemberDeleteHandler(MemberDao memberDao) {
+    this.memberDao = memberDao;
+  }
 
   @Override
   public void service() throws Exception {
@@ -13,28 +18,22 @@ public class MemberDeleteHandler implements Command {
 
     int no = Prompt.inputInt("번호? ");
 
+    Member member = memberDao.findByNo(no);
+
+    if(member == null) {
+      System.out.println("해당 번호의 회원이 존재하지 않습니다.");
+      return;
+    }
+
     String input = Prompt.inputString("정말 삭제하시겠습니까?(Y/N) ");
     if(!input.equalsIgnoreCase("Y")) {
       System.out.println("회원 삭제를 취소하였습니다.");
       return;
     }
 
-    try(Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
-        );
-        PreparedStatement stmt = con.prepareStatement(
-            "delete from pms_member where no = ?"
-            )
-        ) {
+    memberDao.delete(no);
 
-      stmt.setInt(1, no);
-
-      if(stmt.executeUpdate() == 0) {
-        System.out.println("해당 번호의 회원이 없습니다.");
-        return;
-      }
-      System.out.println("회원을 삭제하였습니다.");
-    }
+    System.out.println("회원을 삭제하였습니다.");
   }
 }
 

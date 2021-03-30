@@ -9,14 +9,21 @@ import java.util.List;
 import com.eomcs.pms.domain.Member;
 
 public class MemberDao {
-  public static int insert(Member m) throws Exception {
-    try(Connection con = DriverManager.getConnection(
+
+  Connection con;
+
+  public MemberDao() throws Exception {
+    this.con = DriverManager.getConnection(
         "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
         );
-        PreparedStatement stmt = con.prepareStatement(
-            "insert into pms_member(name, email, password, photo, tel)"
-                + " values(?, ?, password(?), ?, ?)"
-            )
+  }
+
+
+  public int insert(Member m) throws Exception {
+    try(PreparedStatement stmt = con.prepareStatement(
+        "insert into pms_member(name, email, password, photo, tel)"
+            + " values(?, ?, password(?), ?, ?)"
+        )
         ) {
 
       stmt.setString(1, m.getName());
@@ -28,13 +35,10 @@ public class MemberDao {
     }
   }
 
-  public static List<Member> findAll() throws Exception {
-    try(Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
+  public  List<Member> findAll() throws Exception {
+    try(PreparedStatement stmt = con.prepareStatement(
+        "select no, name, email, photo, tel, cdt from pms_member order by name asc;"
         );
-        PreparedStatement stmt = con.prepareStatement(
-            "select no, name, email, photo, tel, cdt from pms_member order by name asc;"
-            );
         ResultSet rs = stmt.executeQuery()
         ) {
       ArrayList<Member> list = new ArrayList<>();
@@ -53,13 +57,10 @@ public class MemberDao {
     }
   }
 
-  public static Member findByNo(int no) throws Exception {
-    try(Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111"
-        );
-        PreparedStatement stmt = con.prepareStatement(
-            "select no, name, email, photo, tel, cdt from pms_member where no = ?"
-            )
+  public  Member findByNo(int no) throws Exception {
+    try(PreparedStatement stmt = con.prepareStatement(
+        "select no, name, email, photo, tel, cdt from pms_member where no = ?"
+        )
         ) {
 
       stmt.setInt(1, no);
@@ -82,11 +83,9 @@ public class MemberDao {
     }
   }
 
-  public static int update(Member m) throws Exception {
-    try (Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
-        PreparedStatement stmt = con.prepareStatement(
-            "update pms_member set name=?, email=?, password=password(?), photo=?, tel=? where no=?")) {
+  public  int update(Member m) throws Exception {
+    try (PreparedStatement stmt = con.prepareStatement(
+        "update pms_member set name=?, email=?, password=password(?), photo=?, tel=? where no=?")) {
 
 
       stmt.setString(1, m.getName());
@@ -100,14 +99,38 @@ public class MemberDao {
     }
   }
 
-  public static int delete(int no) throws Exception {
-    try(PreparedStatement stmt = con.PrepareStatement(
+  public  int delete(int no) throws Exception {
+    try(PreparedStatement stmt = con.prepareStatement(
         "delete from pms_member where no = ?"
         )) {
 
       stmt.setInt(1, no);
 
       return stmt.executeUpdate();
+    }
+  }
+
+  public Member findByName(String name) throws Exception {
+    try(PreparedStatement stmt = con.prepareStatement(
+        "select * from pms_member where name = ?"
+        )) {
+      stmt.setString(1, name);
+
+      ResultSet rs = stmt.executeQuery();
+
+      if(!rs.next()) {
+        return null;
+      }
+
+      Member m = new Member();
+      m.setNo(rs.getInt("no"));
+      m.setName(rs.getString("name"));
+      m.setEmail(rs.getString("email"));
+      m.setPhoto(rs.getString("photo"));
+      m.setTel(rs.getString("tel"));
+      m.setRegisteredDate(rs.getDate("cdt"));
+
+      return m;
     }
   }
 }
