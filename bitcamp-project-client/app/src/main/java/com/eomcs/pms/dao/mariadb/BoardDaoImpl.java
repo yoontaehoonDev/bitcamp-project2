@@ -12,28 +12,15 @@ import com.eomcs.pms.domain.Member;
 
 public class BoardDaoImpl implements BoardDao {
 
-  // 1. 메소드를 호출할 때마다 Connection 객체 생성
-  // 2. 클래스가 로딩될 때 한 번만 생성하기
-  // 3. 여러 DAO가 Connection 객체를 공유할 수 있도록 외부에서 생성한 후, 주입한다.
-  // 4. DAO에 대해 각 인스턴스마다 Connection 객체를 구분해서 사용할 수 있도록
-  //    Connection 필드를 인스턴스 멤버로 선언한다.
-
   Connection con;
 
-  // 생성자에서 Connection 객체를 파라미터로 요구하면,
-  // Connection 객체는 필수 항목이 된다.
-  // Static 필드로는 필수/선택 항목을 제어할 수 없다.
   public BoardDaoImpl(Connection con) throws Exception {
     this.con = con;
   }
 
-  // 이제 메소드들은 인스턴스 필드에 들어있는 Connection 객체를 사용해야 하기 때문에
-  // Static 메소드가 아닌, 인스턴스 메소드로 선언해야 한다.
   @Override
   public int insert(Board board) throws Exception {
 
-    // 자동 close를 위해 try를 사용
-    // catch를 사용하지 않는 이유는 호출자에게 던지기 위해서
     try (PreparedStatement stmt =
         con.prepareStatement("insert into pms_board(title, content, writer) values(?,?,?)");) {
 

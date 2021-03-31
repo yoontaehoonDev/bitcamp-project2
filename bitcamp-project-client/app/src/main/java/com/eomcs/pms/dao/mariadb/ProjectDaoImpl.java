@@ -59,7 +59,14 @@ public class ProjectDaoImpl implements ProjectDao {
 
       return count;
 
-    } finally {
+    } catch (Exception e) {
+      con.rollback();
+      // 이 catch 블록의 목적은 예외를 처리하는 것이 아니라,
+      // rollback을 실행하는 것이다. 따라서, 예외가 발생한 사실은
+      // 이전처럼 호출자에게 그대로 보고해야 한다.
+      throw e;
+    }
+    finally {
       // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
       con.setAutoCommit(true);
     }
@@ -176,6 +183,9 @@ public class ProjectDaoImpl implements ProjectDao {
 
       return count;
 
+    } catch (Exception e) {
+      con.rollback();
+      throw e;
     } finally {
       // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
       con.setAutoCommit(true);
@@ -199,7 +209,11 @@ public class ProjectDaoImpl implements ProjectDao {
 
       return count;
 
-    } finally {
+    } catch (Exception e) {
+      con.rollback();
+      throw e;
+    }
+    finally {
       // 트랜잭션 종료 후 auto commit 을 원래 상태로 설정한다.
       con.setAutoCommit(true);
     }
