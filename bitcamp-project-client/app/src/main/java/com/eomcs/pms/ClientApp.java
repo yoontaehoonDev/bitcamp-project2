@@ -1,11 +1,16 @@
 package com.eomcs.pms;
 
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import com.eomcs.pms.dao.BoardDao;
 import com.eomcs.pms.dao.MemberDao;
 import com.eomcs.pms.dao.ProjectDao;
@@ -67,13 +72,19 @@ public class ClientApp {
 
   public void execute() throws Exception {
 
+    InputStream mybatisConfigStream = Resources.getResourceAsStream("com/eomcs/pms/conf/mybatis-config.xml");
+
+    SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(mybatisConfigStream);
+
+    SqlSession sqlSession = sqlSessionFactory.openSession(true);
+
     Connection con = DriverManager.getConnection(
         "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
 
-    BoardDao boardDao = new BoardDaoImpl(con);
-    MemberDao memberDao = new MemberDaoImpl(con);
-    ProjectDao projectDao = new ProjectDaoImpl(con);
-    TaskDao taskDao = new TaskDaoImpl(con);
+    BoardDao boardDao = new BoardDaoImpl(sqlSession);
+    MemberDao memberDao = new MemberDaoImpl(sqlSession);
+    ProjectDao projectDao = new ProjectDaoImpl(sqlSession);
+    TaskDao taskDao = new TaskDaoImpl(sqlSession);
 
     // 사용자 명령을 처리하는 객체를 맵에 보관한다.
     HashMap<String,Command> commandMap = new HashMap<>();

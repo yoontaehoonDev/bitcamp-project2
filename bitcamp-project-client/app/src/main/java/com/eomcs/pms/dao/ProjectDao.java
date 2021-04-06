@@ -15,9 +15,6 @@ public interface ProjectDao {
 
   int delete(int no) throws Exception;
 
-
-  int insertMember(int projectNo, int memberNo) throws Exception;
-
   List<Member> findAllMembers(int projectNo) throws Exception;
 
   int deleteMembers(int projectNo) throws Exception;

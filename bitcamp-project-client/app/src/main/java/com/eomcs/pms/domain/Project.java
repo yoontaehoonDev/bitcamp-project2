@@ -4,7 +4,6 @@ import java.sql.Date;
 import java.util.List;
 
 public class Project {
-
   private int no;
   private String title;
   private String content;
@@ -12,8 +11,6 @@ public class Project {
   private Date endDate;
   private Member owner;
   private List<Member> members;
-
-  public Project() {}
 
   @Override
   public String toString() {
@@ -62,6 +59,5 @@ public class Project {
   }
   public void setMembers(List<Member> members) {
     this.members = members;
-  }
-
+  }  
 }

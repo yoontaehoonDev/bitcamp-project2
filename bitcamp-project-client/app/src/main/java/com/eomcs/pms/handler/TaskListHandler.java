@@ -30,20 +30,22 @@ public class TaskListHandler implements Command {
       return;
     }
 
-
-    List<Task> task = null;
+    // 2) 해당 프로젝트에 소속된 작업 목록을 가져온다.
+    List<Task> tasks = null;
     if (projectNo == 0) {
-      task = taskDao.findAll();
+      tasks = taskDao.findAll();
     } else {
-      task = taskDao.findByProjectNo(projectNo);
+      tasks = taskDao.findByProjectNo(projectNo);
     }
 
-    if(task.size() == 0) {
+    if (tasks.size() == 0) {
       System.out.println("해당 번호의 프로젝트가 없거나 또는 등록된 작업이 없습니다.");
+      return;
     }
 
-    for(Task t : task) {
-      if(projectNo != t.getProjectNo()) {
+    projectNo = 0;
+    for (Task t : tasks) {
+      if (projectNo != t.getProjectNo()) {
         System.out.printf("'%s' 작업 목록: \n", t.getProjectTitle());
         projectNo = t.getProjectNo();
       }
@@ -54,6 +56,5 @@ public class TaskListHandler implements Command {
           t.getOwner().getName(),
           Task.getStatusLabel(t.getStatus()));
     }
-
   }
 }
