@@ -17,4 +17,17 @@ public interface TaskDao {
 
   int delete(int no) throws Exception;
 
+  int deleteByProjectNo(int projectNo) throws Exception;
 }
+
+
+
+
+
+
+
+
+
+
+
+

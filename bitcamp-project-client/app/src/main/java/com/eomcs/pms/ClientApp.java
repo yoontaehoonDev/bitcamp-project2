@@ -35,7 +35,9 @@ import com.eomcs.pms.handler.MemberValidator;
 import com.eomcs.pms.handler.ProjectAddHandler;
 import com.eomcs.pms.handler.ProjectDeleteHandler;
 import com.eomcs.pms.handler.ProjectDetailHandler;
+import com.eomcs.pms.handler.ProjectDetailSearchHandler;
 import com.eomcs.pms.handler.ProjectListHandler;
+import com.eomcs.pms.handler.ProjectSearchHandler;
 import com.eomcs.pms.handler.ProjectUpdateHandler;
 import com.eomcs.pms.handler.TaskAddHandler;
 import com.eomcs.pms.handler.TaskDeleteHandler;
@@ -43,7 +45,6 @@ import com.eomcs.pms.handler.TaskDetailHandler;
 import com.eomcs.pms.handler.TaskListHandler;
 import com.eomcs.pms.handler.TaskUpdateHandler;
 import com.eomcs.util.Prompt;
-
 
 public class ClientApp {
 
@@ -54,33 +55,41 @@ public class ClientApp {
   String serverAddress;
   int port;
 
-  public ClientApp(String address, int port) {
-    this.serverAddress = address;
-    this.port = port;
-  }
-
   public static void main(String[] args) {
     ClientApp app = new ClientApp("localhost", 8888);
+
     try {
       app.execute();
-    }
-    catch (Exception e) {
-      System.out.println("클라이언트 실행 중 오류 발생");
+
+    } catch (Exception e) {
+      System.out.println("클라이언트 실행 중 오류 발생!");
       e.printStackTrace();
     }
   }
 
+  public ClientApp(String serverAddress, int port) {
+    this.serverAddress = serverAddress;
+    this.port = port;
+  }
+
   public void execute() throws Exception {
 
-    InputStream mybatisConfigStream = Resources.getResourceAsStream("com/eomcs/pms/conf/mybatis-config.xml");
+    // Mybatis 설정 파일을 읽을 입력 스트림 객체 준비
+    InputStream mybatisConfigStream = Resources.getResourceAsStream(
+        "com/eomcs/pms/conf/mybatis-config.xml");
 
+    // SqlSessionFactory 객체 준비
     SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(mybatisConfigStream);
 
+    // DAO가 사용할 SqlSession 객체 준비
+    // => 단 auto commit 으로 동작하는 SqlSession 객체를 준비한다.
     SqlSession sqlSession = sqlSessionFactory.openSession(true);
 
+    // DB Connection 객체 생성
     Connection con = DriverManager.getConnection(
-        "jdbc:mariadb://localhost:3306/studydb?user=study&password=1111");
+        "jdbc:mysql://localhost:3306/studydb?user=study&password=1111");
 
+    // 핸들러가 사용할 DAO 객체 준비
     BoardDao boardDao = new BoardDaoImpl(sqlSession);
     MemberDao memberDao = new MemberDaoImpl(sqlSession);
     ProjectDao projectDao = new ProjectDaoImpl(sqlSession);
@@ -95,7 +104,7 @@ public class ClientApp {
     commandMap.put("/board/update", new BoardUpdateHandler(boardDao));
     commandMap.put("/board/delete", new BoardDeleteHandler(boardDao));
     commandMap.put("/board/search", new BoardSearchHandler(boardDao));
-    //
+
     commandMap.put("/member/add", new MemberAddHandler(memberDao));
     commandMap.put("/member/list", new MemberListHandler(memberDao));
     commandMap.put("/member/detail", new MemberDetailHandler(memberDao));
@@ -103,23 +112,25 @@ public class ClientApp {
     commandMap.put("/member/delete", new MemberDeleteHandler(memberDao));
 
     MemberValidator memberValidator = new MemberValidator(memberDao);
-    //
+
     commandMap.put("/project/add", new ProjectAddHandler(projectDao, memberValidator));
     commandMap.put("/project/list", new ProjectListHandler(projectDao));
     commandMap.put("/project/detail", new ProjectDetailHandler(projectDao));
     commandMap.put("/project/update", new ProjectUpdateHandler(projectDao, memberValidator));
-    commandMap.put("/project/delete", new ProjectDeleteHandler(projectDao));
-    //
+    commandMap.put("/project/delete", new ProjectDeleteHandler(projectDao, taskDao));
+    commandMap.put("/project/search", new ProjectSearchHandler(projectDao));
+    commandMap.put("/project/detailsearch", new ProjectDetailSearchHandler(projectDao));
+
     commandMap.put("/task/add", new TaskAddHandler(taskDao, projectDao, memberValidator));
     commandMap.put("/task/list", new TaskListHandler(taskDao));
     commandMap.put("/task/detail", new TaskDetailHandler(taskDao));
     commandMap.put("/task/update", new TaskUpdateHandler(taskDao, projectDao, memberValidator));
     commandMap.put("/task/delete", new TaskDeleteHandler(taskDao));
 
-    // 서버와 통신하는 것을 대행해 줄 객체를 준비한다.
     try {
 
-      while(true) {
+      while (true) {
+
         String command = com.eomcs.util.Prompt.inputString("명령> ");
 
         if (command.length() == 0) {
@@ -135,12 +146,12 @@ public class ClientApp {
             case "history":
               printCommandHistory(commandStack.iterator());
               break;
-            case "history2": 
+            case "history2":
               printCommandHistory(commandQueue.iterator());
               break;
             case "quit":
             case "exit":
-              System.out.println("안녕");
+              System.out.println("안녕!");
               return;
             default:
               Command commandHandler = commandMap.get(command);
@@ -153,21 +164,19 @@ public class ClientApp {
           }
         } catch (Exception e) {
           System.out.println("------------------------------------------");
-          e.printStackTrace();
           System.out.printf("명령어 실행 중 오류 발생: %s\n", e.getMessage());
           System.out.println("------------------------------------------");
         }
         System.out.println(); // 이전 명령의 실행을 구분하기 위해 빈 줄 출력
       }
+
+    } catch (Exception e) {
+      System.out.println("서버와 통신 하는 중에 오류 발생!");
     }
-    catch (Exception e) {
-      System.out.println("서버와 통신 도중 오류 발생");
-      e.printStackTrace();
-    }
+
     con.close();
     Prompt.close();
   }
-
 
   private void printCommandHistory(Iterator<String> iterator) {
     int count = 0;
@@ -181,7 +190,4 @@ public class ClientApp {
       }
     }
   }
-
-
 }
-
