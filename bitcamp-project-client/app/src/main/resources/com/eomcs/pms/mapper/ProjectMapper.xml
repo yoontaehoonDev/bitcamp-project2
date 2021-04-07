@@ -23,38 +23,28 @@
     </collection>
   </resultMap>
   
-   <sql id="pattern">
-     select
+  <sql id="select1">
+    select
       p.no,
       p.title,
       p.sdt,
       p.edt,
       m.no as owner_no,
-      m.name as owner_name,-
+      m.name as owner_name,
       m2.no as member_no,
       m2.name as member_name
     from pms_project p
       inner join pms_member m on p.owner=m.no
       left outer join pms_member_project mp on mp.project_no=p.no
-      left outer join pms_member m2 on mp.member_no=m2.no   
-   </sql>
+      left outer join pms_member m2 on mp.member_no=m2.no
+  </sql>
   
-  <insert id="insert" parameterType="project">
+  
+  <insert id="insert" parameterType="project"
+          useGeneratedKeys="true" keyColumn="no" keyProperty="no">
     insert into pms_project(title,content,sdt,edt,owner) 
     values(#{title}, #{content}, #{startDate}, #{endDate}, #{owner.no})
-    <foreach collection="members" item="m" separator=",">
-      (#{m.no}, #{no})
-    </foreach>
   </insert>
-  
-   <insert id="insertMembers" parameterType="map">
-    insert into pms_member_project(member_no,project_no) 
-    values
-    <foreach collection="members" item="m" separator=",">
-    (#{m.no}, #{projectNo})
-    </foreach>
-  </insert>
-  
   <!-- 
     위의 SQL은 내부적으로 다음과 같이 실행된다.
     
@@ -79,65 +69,67 @@
       project.setNo(projectNo);
     }
    -->
-   
-  
-  <select id="findByKeywords" resultMap="projectMap" parameterType="map">
-    <include refid="pattern"/>
-      <where>
-	      <choose>
-		      <when test="title != null">
-		        p.title like concat('%', #{title}, '%')
-		      </when>
-		      <when test="owner != null">
-		        m.name = #{owner}
-		      </when>
-		      <when test="member != null">
-		        m2.name = #{member}
-		      </when>
-	      </choose>
-      </where>
-    </select>
   
   <select id="findByKeyword" resultMap="projectMap" parameterType="map">
-    <include refid="pattern"/>
-    <if test="item == 1">
-    where p.title like concat('%', #{keyword}, '%')
-    </if>
-    <if test="item == 2">
-    where m.name like concat('%', #{keyword}, '%')
-    </if>
-    <if test="item == 3">
-    where m2.name like concat('%', #{keyword}, '%')
-    </if>
+    <include refid="select1"/>
+    <where>
+	    <choose>
+		    <when test="item == 1">
+		    p.title like concat('%', #{keyword}, '%')
+		    </when>
+		    <when test="item == 2">
+		    m.name like concat('%', #{keyword}, '%')
+		    </when>
+		    <when test="item == 3">
+		    m2.name like concat('%', #{keyword}, '%')
+		    </when>
+	    </choose>
+    </where>
+    order by title asc
+  </select>
+  
+  <select id="findByKeywords" resultMap="projectMap" parameterType="map">
+    <include refid="select1"/>
+    <where>
+	    <if test="title != ''">
+	      p.title like concat('%', #{title}, '%')
+	    </if>
+	    <if test="owner != ''">
+	      and m.name = #{owner}
+	    </if>
+	    <if test="member != ''">
+	      and m2.name = #{member}
+	    </if>
+    </where>
     order by title asc
   </select>
   
   <select id="findByNo" resultMap="projectMap" parameterType="int">
-    <include refid="pattern"/>
+    select
+      p.no,
+      p.title,
+      p.content,
+      p.sdt,
+      p.edt,
+      m.no as owner_no,
+      m.name as owner_name,
+      m2.no as member_no,
+      m2.name as member_name
+    from pms_project p
+      inner join pms_member m on p.owner=m.no
+      left outer join pms_member_project mp on mp.project_no=p.no
+      left outer join pms_member m2 on mp.member_no=m2.no
     where p.no=#{value}
   </select>
   
   <update id="update" parameterType="project">
-    update pms_project
-    <set>
-      <if test="title != ''">
+    update pms_project set
       title=#{title},
-      </if>
-      <if test="content != ''">
       content=#{content},
-      </if>
-      <if test="sdt != ''">
       sdt=#{startDate},
-      </if>
-      <if test="edt != ''">
       edt=#{endDate},
-      </if>
-      <if test="owner != ''">
       owner=#{owner.no}
-      </if>
-      
     where no=#{no}
-    </set>
   </update>
   
   <delete id="delete" parameterType="int">
@@ -145,6 +137,20 @@
     where no=#{value}
   </delete>
 
+
+  <insert id="insertMember" parameterType="map">
+    insert into pms_member_project(member_no,project_no) 
+    values(#{memberNo}, #{projectNo})
+  </insert>
+  
+  <insert id="insertMembers" parameterType="map">
+    insert into pms_member_project(member_no,project_no) 
+    values
+    <foreach collection="members" item="m" separator=",">
+      (#{m.no}, #{projectNo})
+    </foreach>
+  </insert>
+  
   <delete id="deleteMembers" parameterType="int">
     delete from pms_member_project 
     where project_no=#{value}

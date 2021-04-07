@@ -89,7 +89,6 @@ public class ProjectDaoImpl implements ProjectDao {
     return sqlSession.delete("ProjectMapper.delete", no);
   }
 
-
   @Override
   public List<Member> findAllMembers(int projectNo) throws Exception {
     return sqlSession.selectList("ProjectMapper.findAllMembers", projectNo);
