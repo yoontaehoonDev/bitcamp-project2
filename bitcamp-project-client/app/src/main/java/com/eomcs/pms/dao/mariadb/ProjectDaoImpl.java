@@ -77,12 +77,17 @@ public class ProjectDaoImpl implements ProjectDao {
 
   @Override
   public int delete(int no) throws Exception {
-    // 1) 프로젝트에 소속된 팀원 정보 삭제
+    try {
+      deleteMembers(no);
+      int count = sqlSession.delete("ProjectMapper.delete", no);
 
-    deleteMembers(no);
-
-    // 2) 프로젝트 삭제
-    return sqlSession.delete("ProjectMapper.delete", no);
+      sqlSession.commit();
+      return count;
+    }
+    catch (Exception e) {
+      sqlSession.rollback();
+      throw e;
+    }
   }
 
   @Override
@@ -90,18 +95,25 @@ public class ProjectDaoImpl implements ProjectDao {
     HashMap<String,Object> params = new HashMap<>();
     params.put("projectNo", projectNo);
     params.put("memberNo", memberNo);
-    return sqlSession.insert("ProjectMapper.insertMember", params);
+    int count = sqlSession.insert("ProjectMapper.insertMember", params);
+    sqlSession.commit();
+    return count;
   }
 
   @Override
   public int insertMembers(int projectNo, List<Member> members) throws Exception {
-    HashMap<String,Object> params = new HashMap<>();
-    params.put("projectNo", projectNo);
-    params.put("members", members);
-    int count = sqlSession.insert("ProjectMapper.insertMembers", params);
-
-
-    return count;
+    try {
+      HashMap<String,Object> params = new HashMap<>();
+      params.put("projectNo", projectNo);
+      params.put("members", members);
+      int count = sqlSession.insert("ProjectMapper.insertMembers", params);
+      sqlSession.commit();
+      return count;
+    }
+    catch (Exception e) {
+      sqlSession.rollback();
+      throw e;
+    }
   }
 
   @Override
@@ -111,27 +123,8 @@ public class ProjectDaoImpl implements ProjectDao {
 
   @Override
   public int deleteMembers(int projectNo) throws Exception {
-
     int count = sqlSession.delete("ProjectMapper.deleteMembers", projectNo);
-
-    if(count == 0) {
-      sqlSession.rollback();
-      throw new Exception("멤버 정보 제거 실패");
-    }
-
     sqlSession.commit();
     return count;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
