@@ -1,8 +1,6 @@
 package com.eomcs.pms;
 
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -83,11 +81,8 @@ public class ClientApp {
 
     // DAO가 사용할 SqlSession 객체 준비
     // => 단 auto commit 으로 동작하는 SqlSession 객체를 준비한다.
-    SqlSession sqlSession = sqlSessionFactory.openSession(true);
+    SqlSession sqlSession = sqlSessionFactory.openSession(false);
 
-    // DB Connection 객체 생성
-    Connection con = DriverManager.getConnection(
-        "jdbc:mysql://localhost:3306/studydb?user=study&password=1111");
 
     // 핸들러가 사용할 DAO 객체 준비
     BoardDao boardDao = new BoardDaoImpl(sqlSession);
@@ -119,7 +114,7 @@ public class ClientApp {
     commandMap.put("/project/update", new ProjectUpdateHandler(projectDao, memberValidator));
     commandMap.put("/project/delete", new ProjectDeleteHandler(projectDao, taskDao));
     commandMap.put("/project/search", new ProjectSearchHandler(projectDao));
-    commandMap.put("/project/detailsearch", new ProjectDetailSearchHandler(projectDao));
+    commandMap.put("/project/detailSearch", new ProjectDetailSearchHandler(projectDao));
 
     commandMap.put("/task/add", new TaskAddHandler(taskDao, projectDao, memberValidator));
     commandMap.put("/task/list", new TaskListHandler(taskDao));
@@ -174,7 +169,7 @@ public class ClientApp {
       System.out.println("서버와 통신 하는 중에 오류 발생!");
     }
 
-    con.close();
+    sqlSession.close();
     Prompt.close();
   }
 
