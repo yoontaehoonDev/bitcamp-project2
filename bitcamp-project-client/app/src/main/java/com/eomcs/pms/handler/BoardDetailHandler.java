@@ -3,8 +3,10 @@ package com.eomcs.pms.handler;
 import java.text.SimpleDateFormat;
 import com.eomcs.pms.domain.Board;
 import com.eomcs.pms.service.BoardService;
+import com.eomcs.stereotype.Component;
 import com.eomcs.util.Prompt;
 
+@Component(value="/board/detail")
 public class BoardDetailHandler implements Command {
 
   SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -25,7 +27,7 @@ public class BoardDetailHandler implements Command {
 
     int no = Prompt.inputInt("번호? ");
 
-    Board b = boardService.detail(no);
+    Board b = boardService.get(no);
     if (b == null) {
       System.out.println("해당 번호의 게시글이 없습니다.");
       return;

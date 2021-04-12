@@ -1,50 +1,36 @@
 package com.eomcs.pms;
 
+import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import com.eomcs.mybatis.MybatisDaoFactory;
 import com.eomcs.pms.dao.BoardDao;
 import com.eomcs.pms.dao.MemberDao;
 import com.eomcs.pms.dao.ProjectDao;
 import com.eomcs.pms.dao.TaskDao;
-import com.eomcs.pms.dao.mariadb.BoardDaoImpl;
-import com.eomcs.pms.dao.mariadb.MemberDaoImpl;
-import com.eomcs.pms.dao.mariadb.ProjectDaoImpl;
-import com.eomcs.pms.dao.mariadb.TaskDaoImpl;
-import com.eomcs.pms.handler.BoardAddHandler;
-import com.eomcs.pms.handler.BoardDeleteHandler;
-import com.eomcs.pms.handler.BoardDetailHandler;
-import com.eomcs.pms.handler.BoardListHandler;
-import com.eomcs.pms.handler.BoardSearchHandler;
-import com.eomcs.pms.handler.BoardUpdateHandler;
 import com.eomcs.pms.handler.Command;
-import com.eomcs.pms.handler.MemberAddHandler;
-import com.eomcs.pms.handler.MemberDeleteHandler;
-import com.eomcs.pms.handler.MemberDetailHandler;
-import com.eomcs.pms.handler.MemberListHandler;
-import com.eomcs.pms.handler.MemberUpdateHandler;
 import com.eomcs.pms.handler.MemberValidator;
-import com.eomcs.pms.handler.ProjectAddHandler;
-import com.eomcs.pms.handler.ProjectDeleteHandler;
-import com.eomcs.pms.handler.ProjectDetailHandler;
-import com.eomcs.pms.handler.ProjectDetailSearchHandler;
-import com.eomcs.pms.handler.ProjectListHandler;
-import com.eomcs.pms.handler.ProjectMemberDeleteHandler;
-import com.eomcs.pms.handler.ProjectMemberUpdateHandler;
-import com.eomcs.pms.handler.ProjectSearchHandler;
-import com.eomcs.pms.handler.ProjectUpdateHandler;
-import com.eomcs.pms.handler.TaskAddHandler;
-import com.eomcs.pms.handler.TaskDeleteHandler;
-import com.eomcs.pms.handler.TaskDetailHandler;
-import com.eomcs.pms.handler.TaskListHandler;
-import com.eomcs.pms.handler.TaskUpdateHandler;
 import com.eomcs.pms.service.BoardService;
+import com.eomcs.pms.service.MemberService;
+import com.eomcs.pms.service.ProjectService;
+import com.eomcs.pms.service.TaskService;
+import com.eomcs.pms.service.impl.DefaultBoardService;
+import com.eomcs.pms.service.impl.DefaultMemberService;
+import com.eomcs.pms.service.impl.DefaultProjectService;
+import com.eomcs.pms.service.impl.DefaultTaskService;
+import com.eomcs.stereotype.Component;
 import com.eomcs.util.Prompt;
 
 public class ClientApp {
@@ -55,6 +41,9 @@ public class ClientApp {
 
   String serverAddress;
   int port;
+
+  // 객체를 보관할 컨테이너 준비
+  Map<String,Object> objMap = new HashMap<>();
 
   public static void main(String[] args) {
     ClientApp app = new ClientApp("localhost", 8888);
@@ -73,6 +62,7 @@ public class ClientApp {
     this.port = port;
   }
 
+
   public void execute() throws Exception {
 
     // Mybatis 설정 파일을 읽을 입력 스트림 객체 준비
@@ -86,48 +76,32 @@ public class ClientApp {
     // => 단 auto commit 으로 동작하는 SqlSession 객체를 준비한다.
     SqlSession sqlSession = sqlSessionFactory.openSession(false);
 
+    // DAO 구현체를 만들어주는 공장 객체를 준비한다.
+    MybatisDaoFactory daoFactory = new MybatisDaoFactory(sqlSession);
 
-    // 핸들러가 사용할 DAO 객체 준비
-    BoardDao boardDao = new BoardDaoImpl(sqlSession);
-    MemberDao memberDao = new MemberDaoImpl(sqlSession);
-    ProjectDao projectDao = new ProjectDaoImpl(sqlSession);
-    TaskDao taskDao = new TaskDaoImpl(sqlSession);
 
-    BoardService boardService = new BoardService(sqlSession, boardDao);
+    // 서비스 객체가 사용할 DAO 객체 준비
+    BoardDao boardDao = daoFactory.createDao(BoardDao.class);
+    MemberDao memberDao = daoFactory.createDao(MemberDao.class);
+    ProjectDao projectDao = daoFactory.createDao(ProjectDao.class);
+    TaskDao taskDao = daoFactory.createDao(TaskDao.class);
 
-    // 사용자 명령을 처리하는 객체를 맵에 보관한다.
-    HashMap<String,Command> commandMap = new HashMap<>();
+    // Command 구현체가 사용할 서비스 객체 준비
+    BoardService boardService = new DefaultBoardService(sqlSession, boardDao);
+    MemberService memberService = new DefaultMemberService(sqlSession, memberDao);
+    ProjectService projectService = new DefaultProjectService(sqlSession, projectDao, taskDao);
+    TaskService taskService = new DefaultTaskService(sqlSession, taskDao);
+    MemberValidator memberValidator = new MemberValidator(memberService);
 
-    commandMap.put("/board/add", new BoardAddHandler(boardService));
-    commandMap.put("/board/list", new BoardListHandler(boardService));
-    commandMap.put("/board/detail", new BoardDetailHandler(boardService));
-    commandMap.put("/board/update", new BoardUpdateHandler(boardService));
-    commandMap.put("/board/delete", new BoardDeleteHandler(boardService));
-    commandMap.put("/board/search", new BoardSearchHandler(boardService));
+    // Command 구현체가 사용할 의존 객체를 보관
+    objMap.put("boardService", boardService);
+    objMap.put("memberService", memberService);
+    objMap.put("projectService", projectService);
+    objMap.put("taskService", taskService);
+    objMap.put("memberValidator", memberValidator);
 
-    commandMap.put("/member/add", new MemberAddHandler(memberDao));
-    commandMap.put("/member/list", new MemberListHandler(memberDao));
-    commandMap.put("/member/detail", new MemberDetailHandler(memberDao));
-    commandMap.put("/member/update", new MemberUpdateHandler(memberDao));
-    commandMap.put("/member/delete", new MemberDeleteHandler(memberDao));
-
-    MemberValidator memberValidator = new MemberValidator(memberDao);
-
-    commandMap.put("/project/add", new ProjectAddHandler(projectDao, memberValidator));
-    commandMap.put("/project/list", new ProjectListHandler(projectDao));
-    commandMap.put("/project/detail", new ProjectDetailHandler(projectDao));
-    commandMap.put("/project/update", new ProjectUpdateHandler(projectDao, memberValidator));
-    commandMap.put("/project/delete", new ProjectDeleteHandler(projectDao, taskDao));
-    commandMap.put("/project/search", new ProjectSearchHandler(projectDao));
-    commandMap.put("/project/detailSearch", new ProjectDetailSearchHandler(projectDao));
-    commandMap.put("/project/memberUpdate", new ProjectMemberUpdateHandler(projectDao, memberValidator));
-    commandMap.put("/project/memberDelete", new ProjectMemberDeleteHandler(projectDao));
-
-    commandMap.put("/task/add", new TaskAddHandler(taskDao, projectDao, memberValidator));
-    commandMap.put("/task/list", new TaskListHandler(taskDao));
-    commandMap.put("/task/detail", new TaskDetailHandler(taskDao));
-    commandMap.put("/task/update", new TaskUpdateHandler(taskDao, projectDao, memberValidator));
-    commandMap.put("/task/delete", new TaskDeleteHandler(taskDao));
+    // Command 구현체를 자동 생성하여 맵에 등록
+    registerCommands();
 
     try {
 
@@ -156,7 +130,7 @@ public class ClientApp {
               System.out.println("안녕!");
               return;
             default:
-              Command commandHandler = commandMap.get(command);
+              Command commandHandler = (Command)objMap.get(command);
 
               if (commandHandler == null) {
                 System.out.println("실행할 수 없는 명령입니다.");
@@ -167,6 +141,7 @@ public class ClientApp {
         } catch (Exception e) {
           System.out.println("------------------------------------------");
           System.out.printf("명령어 실행 중 오류 발생: %s\n", e.getMessage());
+          e.printStackTrace();
           System.out.println("------------------------------------------");
         }
         System.out.println(); // 이전 명령의 실행을 구분하기 위해 빈 줄 출력
@@ -178,6 +153,129 @@ public class ClientApp {
 
     sqlSession.close();
     Prompt.close();
+  }
+
+  private void registerCommands() throws Exception {
+
+    // 패키지에 소속된 모든 클래스의 타입 정보를 알아낸다.
+    ArrayList<Class<?>> conponents = new ArrayList<>();
+    loadComponents("com.eomcs.pms.handler", conponents);
+
+    for(Class<?> clazz : conponents) {
+
+      // 클래스 목록에서 클래스 정보를 한 개 꺼내, Command 구현체인지 검사한다.
+      if(!isCommand(clazz)) {
+        continue;
+      }
+      // 클래스 정보를 이용하여 객체를 생성한다.
+      Object command = createCommand(clazz);
+
+      // 클래스 정보에서 @Component 애노테이션 정보를 가져온다.
+      Component compAnno = clazz.getAnnotation(Component.class);
+
+      // 애노테이션 정보에서 맵에 객체를 저장할 때 key로 사용할 문자열을 꺼낸다.
+      String key = null;
+      if(compAnno == null || compAnno.value().length() == 0) {
+        key = clazz.getName(); // 키로 사용할 문자열이 없으면, 클래스 이름을 키로 사용한다.
+      }
+      else {
+        key = compAnno.value();
+      }
+
+      // 생성된 객체를 객체 맵에 보관한다.
+      objMap.put(key, command);
+
+      System.out.println("인스턴스 생성 ==>" + command.getClass().getName());
+
+    }
+  }
+
+  private boolean isCommand(Class<?> type) {
+
+    if(type.isInterface()) {
+      return false;
+    }
+    // 클래스의 인터페이스 목록을 꺼낸다.
+    Class<?>[] interfaces = type.getInterfaces();
+
+    // 클래스가 구현한 인터페이스 중에서 Command 인터페이스가 있는지 조사한다.
+    for(Class<?> i : interfaces) {
+      if(i == Command.class) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void loadComponents(String packageName, ArrayList<Class<?>> conponents) throws Exception {
+
+    // 패키지의 파일 시스템 경로를 알아낸다.
+    File dir = Resources.getResourceAsFile(packageName.replaceAll("\\.", "/"));
+
+    if(!dir.isDirectory()) {
+      throw new Exception("유효한 패키지가 아닙니다.");
+    }
+
+    File[] files = dir.listFiles( f -> { 
+      if(f.isDirectory()) {
+        return true;
+      }
+      if(f.getName().endsWith(".class")) {
+        return true;
+      }
+      return false; 
+    });
+
+    for(File f : files) {
+      System.out.println(f.getCanonicalPath());
+      if(f.isDirectory()) {
+        loadComponents(packageName + "." + f.getName(), conponents);
+      }
+      else {
+        String className = packageName + "." + f.getName().replace(".class", "");
+        try {
+          Class<?> clazz = Class.forName(className);
+          if(clazz.getAnnotation(Component.class) != null) {
+            conponents.add(clazz);
+          }
+        }
+        catch (Exception e) {
+          System.out.println("클래스 로딩 오류 : " +className);
+        }
+      }
+    }
+  }
+
+  private Object createCommand(Class<?> clazz) throws Exception {
+    // 생성자 정보를 알아낸다. 첫 번째 생성자를 꺼낸다.
+    Constructor<?> constructor = clazz.getConstructors()[0];
+
+    // 생성자의 파라미터 정보를 알아낸다.
+    Parameter[] params = constructor.getParameters();
+
+    // 생성자를 호출할 때 넘겨 줄 값을 담을 Collection을 준비한다.
+    ArrayList<Object> args = new ArrayList<>();
+
+    // 각 파리미터의 타입을 알아낸 후, objMap에서 찾는다.
+    for(Parameter p : params) {
+      Class<?> paramType = p.getType();
+      args.add(findDependency(paramType));
+    }
+
+    // 생성자를 호출하여 인스턴스를 생성한다.
+    return constructor.newInstance(args.toArray());
+  }
+
+  private Object findDependency(Class<?> type) {
+    // 맵에서 각 목록을 꺼낸다.
+    Collection<?> values = objMap.values();
+
+    for(Object obj : values) {
+      if(type.isInstance(obj)) {
+        return obj;
+      }
+    }
+    return null;
   }
 
   private void printCommandHistory(Iterator<String> iterator) {

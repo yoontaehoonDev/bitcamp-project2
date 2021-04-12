@@ -1,17 +1,19 @@
 package com.eomcs.pms.handler;
 
 import java.util.List;
-import com.eomcs.pms.dao.ProjectDao;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.domain.Project;
+import com.eomcs.pms.service.ProjectService;
+import com.eomcs.stereotype.Component;
 import com.eomcs.util.Prompt;
 
+@Component(value="/project/search")
 public class ProjectSearchHandler implements Command {
 
-  ProjectDao projectDao;
+  ProjectService projectService;
 
-  public ProjectSearchHandler(ProjectDao projectDao) {
-    this.projectDao = projectDao;
+  public ProjectSearchHandler(ProjectService projectService) {
+    this.projectService = projectService;
   }
 
   @Override
@@ -26,7 +28,7 @@ public class ProjectSearchHandler implements Command {
       keyword = Prompt.inputString("검색어? ");
     }
 
-    List<Project> projects = projectDao.findByKeyword(item, keyword);
+    List<Project> projects = projectService.search(item, keyword);
 
     for (Project p : projects) {
 
