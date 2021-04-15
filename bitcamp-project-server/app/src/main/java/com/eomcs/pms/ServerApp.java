@@ -3,169 +3,88 @@
  */
 package com.eomcs.pms;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-
-import com.eomcs.pms.table.BoardTable;
-import com.eomcs.pms.table.DataTable;
-import com.eomcs.pms.table.MemberTable;
-import com.eomcs.pms.table.ProjectTable;
-import com.eomcs.pms.table.TaskTable;
-import com.eomcs.util.Request;
-import com.eomcs.util.Response;
 
 public class ServerApp {
 
-	int port;
-	HashMap<String,DataTable> tableMap = new HashMap<>();
+  int port;
 
-	public static void main(String[] args) {
-		ServerApp app = new ServerApp(8888);
-		app.service();
-	}
+  public static void main(String[] args) {
+    ServerApp app = new ServerApp(8888);
+    app.service();
+  }
 
-	public ServerApp(int port) {
-		this.port = port;
-	}
+  public ServerApp(int port) {
+    this.port = port;
+  }
 
-	public void service() {
-		// 요청을 처리할 테이블 객체를 준비한다.
-		tableMap.put("board/", new BoardTable());
-		tableMap.put("member/", new MemberTable());
-		tableMap.put("project/", new ProjectTable());
-		tableMap.put("task/", new TaskTable());
+  public void service() {
 
-		// 클라이언트 연결을 기다리는 서버 소켓 생성
-		try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+    // 클라이언트 연결을 기다리는 서버 소켓 생성
+    try (ServerSocket serverSocket = new ServerSocket(this.port)) {
 
-			System.out.println("서버 실행!");
+      System.out.println("서버 실행!");
 
-			while (true) {
-				Socket socket = serverSocket.accept();
+      while (true) {
+        Socket socket = serverSocket.accept();
+        new Thread(() -> processRequest(socket)).start();
 
-				new Thread() {
-					@Override
-					public void run() {
-						processRequest(socket);
-					};
-				}.start();
+      }
 
-				new Thread(() -> processRequest(socket));
+    } catch (Exception e) {
+      System.out.println("서버 실행 중 오류 발생!");
+      e.printStackTrace();
+    }
+  }
 
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-						processRequest(socket);
-					}
-				}).start();
-			}
 
-		} catch (Exception e) {
-			System.out.println("서버 실행 중 오류 발생!");
-			e.printStackTrace();
-		}
-	}
+  public void processRequest(Socket socket) {
+    try (
+        Socket cliencSocket = socket;
+        BufferedReader in = new BufferedReader(new InputStreamReader(cliencSocket.getInputStream())); 
+        PrintWriter out = new PrintWriter(cliencSocket.getOutputStream()))
+    {
 
-	private DataTable findDataTable(String command) {
-		Set<String> keySet = tableMap.keySet();
-		for (String key : keySet) {
-			if (command.startsWith(key)) {
-				return tableMap.get(key);
-			}
-		}
-		return null;
-	}
+      while (true) {
 
-	private Request receiveRequest(DataInputStream in) throws Exception {
-		Request request = new Request();
+        // 클라이언트가 보낸 요청을 읽는다.
+        String requestLine = in.readLine();
 
-		// 1) 명령어 문자열을 읽는다.
-		request.setCommand(in.readUTF());
+        if(requestLine.equalsIgnoreCase("exit") || requestLine.equalsIgnoreCase("quit")) {
+          in.readLine(); // 요청의 끝을 의미하는 빈 줄을 읽는다.
+          out.println("Goodbye");
+          out.println();
+          out.flush();
+          break;
+        }
 
-		// 2) 클라이언트가 보낸 데이터의 개수를 읽는다.
-		int length = in.readInt();
+        // 클라이언트가 보낸 명령을 서버 창에 출력한다.
+        System.out.println(requestLine);
 
-		// 3) 클라이언트가 보낸 데이터를 읽어서 List 컬렉션에 담는다.
-		ArrayList<String> data = null;
-		if (length > 0) {
-			data = new ArrayList<>();
-			for (int i = 0; i < length; i++) {
-				data.add(in.readUTF());
-			}
-			request.setDataList(data);
-		}
+        // 클라이언트가 보낸 데이터를 읽는다.
+        while (true) {
+          String line = in.readLine();
+          if(line.length() == 0) {
+            break;
+          }
+          // 클라이언트가 보낸 데이터를 서버 창에 출력한다.
+          System.out.println(line);
+        }
+        System.out.println("-----------------------------------");
 
-		return request;
-	}
+        out.println("OK");
+        out.printf("===> %s\n", requestLine);
+        out.println();
+        out.flush();
+      }
 
-	private void sendResponse(DataOutputStream out, String status, String... data) throws Exception {
-		out.writeUTF(status);
-		out.writeInt(data.length);
-		for (int i = 0; i < data.length; i++) {
-			out.writeUTF(data[i]);
-		}
-		out.flush();
-	}
-
-	private void log(Request request) {
-		System.out.println("-------------------------------");
-		System.out.printf("명령: %s\n", request.getCommand());
-
-		List<String> data = request.getDataList();
-		System.out.printf("데이터 개수: %d\n", data == null ? 0 : data.size());
-		if (data != null) {
-			System.out.println("데이터:");
-			for (String str : data) {
-				System.out.println(str);
-			}
-		}
-	}
-
-	public void processRequest(Socket socket) {
-		try (DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-				DataInputStream in = new DataInputStream(socket.getInputStream())) {
-
-			while (true) {
-				Request request = receiveRequest(in);
-				log(request);
-
-				if (request.getCommand().equals("quit")) {
-					sendResponse(out, "success");
-					break;
-				}
-
-				DataTable dataTable = findDataTable(request.getCommand());
-
-				if (dataTable != null) {
-					Response response = new Response();
-					try {
-						dataTable.service(request, response);          
-						sendResponse(
-								out, 
-								"success", 
-								response.getDataList().toArray(new String[response.getDataList().size()]));
-
-					} catch (Exception e) {
-						sendResponse(
-								out, 
-								"error", 
-								e.getMessage() != null ? e.getMessage() : e.getClass().getName());
-					}
-
-				} else {
-					sendResponse(out, "error", "해당 요청을 처리할 수 없습니다!");
-				}
-			}
-
-		} catch (Exception e) {
-			System.out.println("클라이언트의 요청을 처리하는 중에 오류 발생!");
-			e.printStackTrace();
-		}
-	}
+    } catch (Exception e) {
+      System.out.println("클라이언트의 요청을 처리하는 중에 오류 발생!");
+      e.printStackTrace();
+    }
+  }
 }
