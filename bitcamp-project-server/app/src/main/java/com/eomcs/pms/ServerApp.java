@@ -8,10 +8,14 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import com.eomcs.pms.util.concurrent.ThreadPool;
 
 public class ServerApp {
 
   int port;
+
+  // 서버의 상태를 설정
+  boolean isStop;
 
   public static void main(String[] args) {
     ServerApp app = new ServerApp(8888);
@@ -24,6 +28,8 @@ public class ServerApp {
 
   public void service() {
 
+    ThreadPool threadPool = new ThreadPool();
+
     // 클라이언트 연결을 기다리는 서버 소켓 생성
     try (ServerSocket serverSocket = new ServerSocket(this.port)) {
 
@@ -31,14 +37,23 @@ public class ServerApp {
 
       while (true) {
         Socket socket = serverSocket.accept();
-        new Thread(() -> processRequest(socket)).start();
+        if(isStop) {
+          // 서버의 상태가 종료면, 즉시 반복문을 탈출하여 main 스레드의 실행을 끝낸다.
+          break;
+        }
 
+        threadPool.execute(() -> processRequest(socket));
       }
 
     } catch (Exception e) {
       System.out.println("서버 실행 중 오류 발생!");
       e.printStackTrace();
     }
+
+    // 쓰레드 풀의 모든 쓰레드를 종료시킨다.
+    // 단, 현재 접속 중인 쓰레드는 작업을 완료할 떄까지 기다린다.
+    threadPool.shutdown();
+    System.out.println("서버 종료");
   }
 
 
@@ -54,12 +69,21 @@ public class ServerApp {
         // 클라이언트가 보낸 요청을 읽는다.
         String requestLine = in.readLine();
 
+        if(requestLine.equalsIgnoreCase("serverstop")) {
+          in.readLine();
+          out.println("Server stopped");
+          out.println();
+          out.flush();
+          terminate();
+          return;
+        }
+
         if(requestLine.equalsIgnoreCase("exit") || requestLine.equalsIgnoreCase("quit")) {
           in.readLine(); // 요청의 끝을 의미하는 빈 줄을 읽는다.
           out.println("Goodbye");
           out.println();
           out.flush();
-          break;
+          return;
         }
 
         // 클라이언트가 보낸 명령을 서버 창에 출력한다.
@@ -87,4 +111,14 @@ public class ServerApp {
       e.printStackTrace();
     }
   }
+
+  // 서버를 최종적으로 종료하는 역할을 한다.
+  private void terminate() {
+    // 서버의 상태를 종료로 설정한다.
+    isStop = true;
+
+    try(Socket socket = new Socket("localhost", 8888)) {}
+    catch (Exception e) {}
+  }
+
 }
