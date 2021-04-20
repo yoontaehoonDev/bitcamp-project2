@@ -1,5 +1,6 @@
 package com.eomcs.pms.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
 import org.apache.ibatis.session.SqlSession;
 import com.eomcs.pms.dao.MemberDao;
@@ -34,6 +35,14 @@ public class DefaultMemberService implements MemberService {
   @Override
   public Member get(int no) throws Exception {
     return memberDao.findByNo(no);
+  }
+
+  @Override
+  public Member get(String email, String password) throws Exception {
+    HashMap<String,Object> params = new HashMap<>();
+    params.put("email", email);
+    params.put("password", password);
+    return memberDao.findByEmailPassword(params);
   }
 
   // 변경 업무

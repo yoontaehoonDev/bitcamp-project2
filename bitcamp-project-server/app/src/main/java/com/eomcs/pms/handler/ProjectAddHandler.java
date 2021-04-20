@@ -1,6 +1,7 @@
 package com.eomcs.pms.handler;
 
 import java.io.PrintWriter;
+import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.domain.Project;
 import com.eomcs.pms.service.ProjectService;
 import com.eomcs.stereotype.Component;
@@ -26,6 +27,11 @@ public class ProjectAddHandler implements Command {
     Prompt prompt = request.getPrompt();
 
     out.println("[프로젝트 등록]");
+    Member m = (Member) request.getSession().getAttribute("loginUser");
+    if(m == null) {
+      out.println("로그인 후, 등록 가능합니다.");
+      return;
+    }
 
     Project p = new Project();
     p.setTitle(prompt.inputString("프로젝트명? "));
@@ -33,7 +39,7 @@ public class ProjectAddHandler implements Command {
     p.setStartDate(prompt.inputDate("시작일? "));
     p.setEndDate(prompt.inputDate("종료일? "));
 
-    p.setOwner(memberValidator.inputMember("만든이?(취소: 빈 문자열) ", request, response));
+    p.setOwner(m);
     if (p.getOwner() == null) {
       out.println("프로젝트 입력을 취소합니다.");
       return;

@@ -42,6 +42,17 @@
     order by name asc
   </select>
   
+  <select id="findByEmailPassword" resultMap="memberMap" parameterType="map">
+    select
+      no,
+      name,
+      email,
+      photo
+    from pms_member
+    where
+      email=#{email} and password=password(#{password})
+  </select>
+  
   <select id="findByNo" resultMap="memberMap" parameterType="int">
     select 
       no,
