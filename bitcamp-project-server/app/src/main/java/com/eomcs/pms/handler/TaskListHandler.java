@@ -9,7 +9,7 @@ import com.eomcs.util.CommandRequest;
 import com.eomcs.util.CommandResponse;
 import com.eomcs.util.Prompt;
 
-@Component(value="/task/list")
+@Component("/task/list")
 public class TaskListHandler implements Command {
 
   TaskService taskService;
@@ -21,9 +21,10 @@ public class TaskListHandler implements Command {
   @Override
   public void service(CommandRequest request, CommandResponse response) throws Exception {
     PrintWriter out = response.getWriter();
+    Prompt prompt = request.getPrompt();
     out.println("[작업 목록]");
 
-    String input = Prompt.inputString("프로젝트 번호?(전체: 빈 문자열 또는 0) ");
+    String input = prompt.inputString("프로젝트 번호?(전체: 빈 문자열 또는 0) ");
 
     // 1) 사용자가 입력한 문자열을 프로젝트 번호로 바꾼다.
     int projectNo = 0;
