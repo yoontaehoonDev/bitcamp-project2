@@ -2,6 +2,7 @@ package com.eomcs.pms.web;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -37,7 +38,12 @@ public class MemberListHandler implements Servlet {
       }
     }
     catch (Exception e) {
+      StringWriter strWriter = new StringWriter();
+      PrintWriter printWriter = new PrintWriter(strWriter);
       e.printStackTrace();
+
+      // StringWriter에 들어 있는 출력 내용을 꺼내 클라이언트로 보낸다.
+      out.println(strWriter.toString());
     }
   }
 

@@ -2,6 +2,7 @@ package com.eomcs.pms.web;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
@@ -20,6 +21,7 @@ public class ProjectListHandler implements Servlet {
   public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
 
     ProjectService projectService = (ProjectService) request.getServletContext().getAttribute("projectService");
+    response.setContentType("text/plain;charset=UTF-8");
     PrintWriter out = response.getWriter();
     out.println("[프로젝트 목록]");
 
@@ -49,7 +51,12 @@ public class ProjectListHandler implements Servlet {
       }
     }
     catch (Exception e) {
+      StringWriter strWriter = new StringWriter();
+      PrintWriter printWriter = new PrintWriter(strWriter);
       e.printStackTrace();
+
+      // StringWriter에 들어 있는 출력 내용을 꺼내 클라이언트로 보낸다.
+      out.println(strWriter.toString());
     }
   }
 
