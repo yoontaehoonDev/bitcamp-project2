@@ -29,6 +29,7 @@ public class TaskUpdateHandler implements Command {
   public void service(CommandRequest request, CommandResponse response) throws Exception {
     PrintWriter out = response.getWriter();
     Prompt prompt = request.getPrompt();
+
     out.println("[작업 변경]");
 
     int no = prompt.inputInt("번호? ");

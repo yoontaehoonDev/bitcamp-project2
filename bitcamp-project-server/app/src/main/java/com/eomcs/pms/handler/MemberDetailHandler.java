@@ -19,7 +19,6 @@ public class MemberDetailHandler implements Command {
 
   @Override
   public void service(CommandRequest request, CommandResponse response) throws Exception {
-
     PrintWriter out = response.getWriter();
     Prompt prompt = request.getPrompt();
 

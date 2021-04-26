@@ -20,22 +20,24 @@ public class ProjectDeleteHandler implements Command {
 
   @Override
   public void service(CommandRequest request, CommandResponse response) throws Exception {
-
     PrintWriter out = response.getWriter();
     Prompt prompt = request.getPrompt();
 
     out.println("[프로젝트 삭제]");
-    Member m = (Member) request.getSession().getAttribute("loginUser");
-    if(m == null) {
-      out.println("프로젝트 삭제 접근 권한이 없습니다.");
+
+
+    int no = prompt.inputInt("번호? ");
+
+    Project oldProject = projectService.get(no);
+
+    if (oldProject == null) {
+      out.println("해당 번호의 프로젝트가 없습니다.");
       return;
     }
 
-    int no = prompt.inputInt("번호? ");
-    Project p = projectService.get(no);
-
-    if(p.getOwner().getNo() != m.getNo()) {
-      out.println("프로젝트 삭제 권한이 없습니다.");
+    Member loginUser = (Member) request.getSession().getAttribute("loginUser");
+    if (oldProject.getOwner().getNo() != loginUser.getNo()) {
+      out.println("삭제 권한이 없습니다!");
       return;
     }
 

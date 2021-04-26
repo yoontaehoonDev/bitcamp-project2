@@ -22,16 +22,11 @@ public class ProjectAddHandler implements Command {
 
   @Override
   public void service(CommandRequest request, CommandResponse response) throws Exception {
-
     PrintWriter out = response.getWriter();
     Prompt prompt = request.getPrompt();
 
     out.println("[프로젝트 등록]");
-    Member m = (Member) request.getSession().getAttribute("loginUser");
-    if(m == null) {
-      out.println("로그인 후, 등록 가능합니다.");
-      return;
-    }
+
 
     Project p = new Project();
     p.setTitle(prompt.inputString("프로젝트명? "));
@@ -39,12 +34,8 @@ public class ProjectAddHandler implements Command {
     p.setStartDate(prompt.inputDate("시작일? "));
     p.setEndDate(prompt.inputDate("종료일? "));
 
-    p.setOwner(m);
-    if (p.getOwner() == null) {
-      out.println("프로젝트 입력을 취소합니다.");
-      return;
-    }
-
+    Member loginUser = (Member) request.getSession().getAttribute("loginUser");
+    p.setOwner(loginUser);
     p.setMembers(memberValidator.inputMembers("팀원?(완료: 빈 문자열) ", request, response));
 
     projectService.add(p);

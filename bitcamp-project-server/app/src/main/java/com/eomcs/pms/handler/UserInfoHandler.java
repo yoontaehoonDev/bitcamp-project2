@@ -9,24 +9,20 @@ import com.eomcs.util.CommandResponse;
 @Component("/userInfo")
 public class UserInfoHandler implements Command {
 
-
   @Override
   public void service(CommandRequest request, CommandResponse response) throws Exception {
-
     PrintWriter out = response.getWriter();
-    out.println("[유저 정보]");
 
     Member member = (Member) request.getSession().getAttribute("loginUser");
-    if(member == null) {
-      out.println("로그인 하지 않았습니다.");
+    if (member == null) {
+      out.println("로그인 하지 않았습니다!");
       return;
     }
 
-    out.printf("사용자 번호 : %d\n", member.getNo());
-    out.printf("이름 : %s\n", member.getName());
-    out.printf("이메일 : %s\n", member.getEmail());
-    out.printf("사진 : %s\n", member.getPhoto());
-
+    out.printf("사용자번호: %d\n", member.getNo());
+    out.printf("이름: %s\n", member.getName());
+    out.printf("이메일: %s\n", member.getEmail());
+    out.printf("사진: %s\n", member.getPhoto());
   }
 }
 

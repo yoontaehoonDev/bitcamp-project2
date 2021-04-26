@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 // 클라이언트가 접속해 있는 동안 사용하는 객체다.
-// 핸들러(Command 구현체)가 같은 클라이언트의 요청을 처리하는 동안
-// 객체를 보관하는 용도로 사용할 것이다.
-
+// 핸들러(Command 구현체)가 같은 클라이언트의 요청을 처리하는 동안 
+// 객체를 보관하는 용도로 사용할 것이다.   
 public class Session {
+
   private Map<String,Object> map = new HashMap<>();
 
   // 보관소에 값 저장

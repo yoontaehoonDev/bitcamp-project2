@@ -9,7 +9,7 @@ import com.eomcs.stereotype.Component;
 import com.eomcs.util.CommandRequest;
 import com.eomcs.util.CommandResponse;
 
-@Component(value="/project/list")
+@Component("/project/list")
 public class ProjectListHandler implements Command {
 
   ProjectService projectService;

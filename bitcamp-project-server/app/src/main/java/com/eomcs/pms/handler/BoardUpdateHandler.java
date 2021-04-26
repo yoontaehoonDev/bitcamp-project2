@@ -12,7 +12,6 @@ import com.eomcs.util.Prompt;
 @Component("/board/update")
 public class BoardUpdateHandler implements Command {
 
-
   BoardService boardService;
 
   public BoardUpdateHandler(BoardService boardService) {
@@ -25,11 +24,6 @@ public class BoardUpdateHandler implements Command {
     Prompt prompt = request.getPrompt();
 
     out.println("[게시글 변경]");
-    Member m = (Member) request.getSession().getAttribute("loginUser");
-    if(m == null) {
-      out.println("로그인 후, 변경 가능합니다.");
-      return;
-    }
 
     int no = prompt.inputInt("번호? ");
 
@@ -39,8 +33,9 @@ public class BoardUpdateHandler implements Command {
       return;
     }
 
-    if(oldBoard.getWriter().getNo() != m.getNo()) {
-      out.println("변경 권한이 없습니다.");
+    Member loginUser = (Member) request.getSession().getAttribute("loginUser");
+    if (oldBoard.getWriter().getNo() != loginUser.getNo()) {
+      out.println("변경 권한이 없습니다!");
       return;
     }
 

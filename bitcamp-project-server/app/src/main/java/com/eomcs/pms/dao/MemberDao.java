@@ -12,7 +12,7 @@ public interface MemberDao {
 
   Member findByNo(int no) throws Exception;
 
-  Member findByEmailPassword(Map<String, Object> param) throws Exception;
+  Member findByEmailPassword(Map<String,Object> params) throws Exception;
 
   int update(Member member) throws Exception;
 

@@ -24,17 +24,18 @@ public class BoardDeleteHandler implements Command {
     Prompt prompt = request.getPrompt();
 
     out.println("[게시글 삭제]");
-    Member m = (Member) request.getSession().getAttribute("loginUser");
-    if(m == null) {
-      out.println("로그인 후, 삭제 가능합니다.");
+
+    int no = prompt.inputInt("번호? ");
+
+    Board oldBoard = boardService.get(no);
+    if (oldBoard == null) {
+      out.println("해당 번호의 게시글이 없습니다.");
       return;
     }
 
-    int no = prompt.inputInt("번호? ");
-    Board b = boardService.get(no);
-
-    if(b.getWriter().getNo() != m.getNo()) {
-      out.println("삭제 권한이 없습니다.");
+    Member loginUser = (Member) request.getSession().getAttribute("loginUser");
+    if (oldBoard.getWriter().getNo() != loginUser.getNo()) {
+      out.println("삭제 권한이 없습니다!");
       return;
     }
 

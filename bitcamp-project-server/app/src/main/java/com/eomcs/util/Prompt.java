@@ -28,5 +28,4 @@ public class Prompt {
   public Date inputDate(String title) throws Exception {
     return Date.valueOf(inputString(title));
   }
-
 }
