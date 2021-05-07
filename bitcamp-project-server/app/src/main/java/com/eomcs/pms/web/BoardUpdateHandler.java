@@ -13,8 +13,8 @@ import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.service.BoardService;
 
 @SuppressWarnings("serial")
-@WebServlet("/board/add")
-public class BoardAddHandler extends HttpServlet {
+@WebServlet("/board/update")
+public class BoardUpdateHandler extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -22,34 +22,39 @@ public class BoardAddHandler extends HttpServlet {
 
     BoardService boardService = (BoardService) request.getServletContext().getAttribute("boardService");
 
-    request.setCharacterEncoding("UTF-8");
-
-    Board b = new Board();
-
-    b.setTitle(request.getParameter("title"));
-    b.setContent(request.getParameter("content"));
-
-    // 작성자는 로그인 사용자이다.
-    HttpServletRequest httpRequest = request;
-    Member loginUser = (Member) httpRequest.getSession().getAttribute("loginUser");
-    b.setWriter(loginUser);
-
     response.setContentType("text/html;charset=UTF-8");
     PrintWriter out = response.getWriter();
 
     out.println("<!DOCTYPE html>");
     out.println("<html>");
     out.println("<head>");
-    out.println("<title>게시글 등록</title>");
+    out.println("<title>게시글 변경</title>");
 
     try {
-      boardService.add(b);
+      request.setCharacterEncoding("UTF-8");
+      int no = Integer.parseInt(request.getParameter("no"));
+
+      Board oldBoard = boardService.get(no);
+      if (oldBoard == null) {
+        throw new Exception("해당 번호의 게시글이 없습니다.");
+      } 
+
+      Member loginUser = (Member) request.getSession().getAttribute("loginUser");
+      if (oldBoard.getWriter().getNo() != loginUser.getNo()) {
+        throw new Exception("변경 권한이 없습니다!");
+      }
+
+      Board board = new Board();
+      board.setNo(oldBoard.getNo());
+      board.setTitle(request.getParameter("title"));
+      board.setContent(request.getParameter("content"));
+      boardService.update(board);
 
       out.println("<meta http-equiv='Refresh' content='1;url=list'>");
       out.println("</head>");
       out.println("<body>");
-      out.println("<h1>게시글 등록</h1>");
-      out.println("<p>게시글을 등록하였습니다.</p>");
+      out.println("<h1>게시글 변경</h1>");
+      out.println("<p>게시글을 변경하였습니다.</p>");
 
     } catch (Exception e) {
       StringWriter strWriter = new StringWriter();
@@ -58,12 +63,12 @@ public class BoardAddHandler extends HttpServlet {
 
       out.println("</head>");
       out.println("<body>");
-      out.println("<h1>게시글 등록 오류</h1>");
+      out.println("<h1>게시글 변경 오류</h1>");
+      out.printf("<p>%s</p>\n", e.getMessage());
       out.printf("<pre>%s</pre>\n", strWriter.toString());
+      out.println("<p><a href='list'>목록</a></p>");
+
     }
-
-    out.println("<p><a href='list'>목록</a></p>");
-
     out.println("</body>");
     out.println("</html>");
   }

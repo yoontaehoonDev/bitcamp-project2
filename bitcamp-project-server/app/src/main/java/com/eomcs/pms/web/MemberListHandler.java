@@ -13,11 +13,12 @@ import javax.servlet.annotation.WebServlet;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.service.MemberService;
 
-@WebServlet("/member/list")
+@WebServlet("/member/list") 
 public class MemberListHandler implements Servlet {
 
   @Override
-  public void service(ServletRequest request, ServletResponse response) throws ServletException, IOException {
+  public void service(ServletRequest request, ServletResponse response)
+      throws ServletException, IOException {
 
     MemberService memberService = (MemberService) request.getServletContext().getAttribute("memberService");
 
@@ -36,40 +37,30 @@ public class MemberListHandler implements Servlet {
             m.getPhoto(),
             m.getTel());
       }
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       StringWriter strWriter = new StringWriter();
       PrintWriter printWriter = new PrintWriter(strWriter);
-      e.printStackTrace();
-
-      // StringWriter에 들어 있는 출력 내용을 꺼내 클라이언트로 보낸다.
+      e.printStackTrace(printWriter);
       out.println(strWriter.toString());
     }
   }
 
   @Override
   public void init(ServletConfig config) throws ServletException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public ServletConfig getServletConfig() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-
-  @Override
-  public String getServletInfo() {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   @Override
   public void destroy() {
-    // TODO Auto-generated method stub
+  }
 
+  @Override
+  public ServletConfig getServletConfig() {
+    return null;
+  }
+
+  @Override
+  public String getServletInfo() {
+    return null;
   }
 }
 

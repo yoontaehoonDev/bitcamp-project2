@@ -4,31 +4,36 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import com.eomcs.pms.domain.Member;
 import com.eomcs.pms.domain.Project;
 import com.eomcs.pms.service.ProjectService;
 
-@WebServlet("/project/list")
-public class ProjectListHandler implements Servlet {
+@SuppressWarnings("serial")
+@WebServlet("/project/detailSearch")
+public class ProjectDetailSearchHandler extends HttpServlet {
 
   @Override
-  public void service(ServletRequest request, ServletResponse response)
+  protected void service(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
     ProjectService projectService = (ProjectService) request.getServletContext().getAttribute("projectService");
 
     response.setContentType("text/plain;charset=UTF-8");
     PrintWriter out = response.getWriter();
-    out.println("[프로젝트 목록]");
+
+    out.println("[프로젝트 상세 검색]");
 
     try {
-      List<Project> projects = projectService.list();
+      String title = request.getParameter("title");
+      String owner = request.getParameter("owner");
+      String member = request.getParameter("member");
+
+      List<Project> projects = projectService.search(title, owner, member);
 
       for (Project p : projects) {
 
@@ -50,33 +55,14 @@ public class ProjectListHandler implements Servlet {
             p.getEndDate(),
             p.getOwner().getName(),
             strBuilder.toString());
+      }
 
-      } 
-
-    }catch (Exception e) {
+    } catch (Exception e) {
       StringWriter strWriter = new StringWriter();
       PrintWriter printWriter = new PrintWriter(strWriter);
       e.printStackTrace(printWriter);
       out.println(strWriter.toString());
     }
-  }
-
-  @Override
-  public void init(ServletConfig config) throws ServletException {
-  }
-
-  @Override
-  public void destroy() {
-  }
-
-  @Override
-  public ServletConfig getServletConfig() {
-    return null;
-  }
-
-  @Override
-  public String getServletInfo() {
-    return null;
   }
 }
 

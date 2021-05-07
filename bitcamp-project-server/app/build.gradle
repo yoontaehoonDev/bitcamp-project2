@@ -1,9 +1,11 @@
 plugins {
     id 'java'
-    id 'eclipse'
+    
+    // 이클립스 IDE에서 사용할 설정 파일을 만들어주는 플러그인
+    id 'eclipse-wtp'
     
     // 웹 애플리케이션 패키지 파일을 생성할 때 사용할 플러그인 등록
-    id 'war'    
+    id 'war'
     
 }
 
@@ -19,7 +21,7 @@ tasks.withType(JavaCompile) {
 
 war {
     archiveBaseName = "pms"
-    }
+}
 
 repositories {
     jcenter()
@@ -28,7 +30,6 @@ repositories {
 dependencies {
     // 웹 애플리케이션을 제작할 때 사용하는 Servlet/JSP 라이브러리를 
     implementation 'javax.servlet:javax.servlet-api:4.0.1'
-    
     implementation 'org.mybatis:mybatis:3.5.6'
     implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.2'
     implementation 'com.google.guava:guava:29.0-jre'
