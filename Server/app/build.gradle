@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    
+    // 이클립스 IDE에서 사용할 설정 파일을 만들어주는 플러그인
+    id 'eclipse-wtp'
+    
+    // 웹 애플리케이션 패키지 파일을 생성할 때 사용할 플러그인 등록
+    id 'war'
+    
+}
+
+eclipse {
+    project {
+        name = 'bitcamp-project-server'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+war {
+    archiveBaseName = "pms"
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    
+    implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+      
+    implementation 'org.mybatis:mybatis-spring:2.0.6'
+  
+    implementation 'org.springframework:spring-jdbc:5.3.7'
+        
+    implementation 'org.springframework:spring-webmvc:5.3.7'
+
+    implementation 'net.coobird:thumbnailator:0.4.13'
+    
+    providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
+ 
+    implementation 'javax.servlet:jstl:1.2'
+    
+    implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.2'
+    
+    implementation 'org.mybatis:mybatis:3.5.6'
+    
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    
+    testImplementation 'junit:junit:4.13'
+    implementation 'com.google.guava:guava:29.0-jre'
+}
+
